@@ -92,9 +92,6 @@ async function generateDictionaryFiles(
         breakpoint?: Breakpoint;
       }[] = await tokenDictionary.formatPlatform('css');
 
-      console.log('heeeey');
-      console.log(tokenDictionary);
-
       allFiles = allFiles.concat(files);
 
       await Promise.all(
