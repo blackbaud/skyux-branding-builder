@@ -1,10 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "declaration": true,
-    "outDir": "./dist",
-    "resolveJsonModule": false
-  },
-  "include": ["index.ts"],
-  "exclude": ["src/**/*.spec.mts", "node_modules", "dist"]
+  "files": ["index.ts"],
+  "exclude": ["src/**/*.spec.mts"]
 }
