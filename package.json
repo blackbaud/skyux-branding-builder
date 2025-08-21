@@ -4,11 +4,7 @@
   "description": "style dictionary builder for design tokens",
   "main": "index.js",
   "type": "module",
-  "files": [
-    "dist"
-  ],
   "pipelineSettings": {
-    "publishToCDN": false,
     "publishToNPM": true
   },
   "scripts": {
