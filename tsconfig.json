@@ -19,5 +19,6 @@
     "target": "ES2022",
     "useDefineForClassFields": false
   },
-  "include": ["src", "index.ts"]
+  "files": ["index.ts", "vitest.config.ts"],
+  "include": ["src/**/*.ts"]
 }
