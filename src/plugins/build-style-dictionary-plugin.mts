@@ -17,7 +17,6 @@ import {
   generateAssetsCss,
   fixAssetsUrlValue,
 } from './shared/assets-utils.mjs';
-import { PublicTokenSet } from '../types/public-token-set.js';
 
 interface SkyStyleDictionaryConfig extends Config {
   platforms: {
@@ -92,72 +91,51 @@ async function generateDictionaryFiles(
 
   await Promise.all(
     tokenConfig.tokenSets.map(async (tokenSet) => {
-      const tokenDictionary = await sd.extend(
-        getBaseDictionaryConfig(tokenConfig, tokenSet, {
-          ...skyOptions,
-          generateUrlAtProperties: true,
-        }),
-      );
+      if (tokenSet.type === 'public') {
+        const publicTokenDictionary = await sd.extend(
+          getPublicDictionaryConfig(tokenConfig, tokenSet, skyOptions),
+        );
+        const files: GeneratedFile[] =
+          await publicTokenDictionary.formatPlatform('css');
+        publicApiFiles = publicApiFiles.concat(files);
+      } else {
+        const tokenDictionary = await sd.extend(
+          getBaseDictionaryConfig(tokenConfig, tokenSet, {
+            ...skyOptions,
+            generateUrlAtProperties: true,
+          }),
+        );
 
-      const files: {
-        output: unknown;
-        destination: string | undefined;
-        breakpoint?: Breakpoint;
-      }[] = await tokenDictionary.formatPlatform('css');
+        const files: GeneratedFile[] =
+          await tokenDictionary.formatPlatform('css');
 
-      tokenFiles = tokenFiles.concat(files);
+        tokenFiles = tokenFiles.concat(files);
 
-      await Promise.all(
-        tokenSet.referenceTokens.map(async (referenceTokenSet) => {
-          const referenceTokenDictionary = await sd.extend(
-            getReferenceDictionaryConfig(
-              tokenConfig,
-              tokenSet,
-              referenceTokenSet,
-              skyOptions,
-            ),
-          );
-          const files: {
-            output: unknown;
-            destination: string | undefined;
-            breakpoint?: Breakpoint;
-          }[] = await referenceTokenDictionary.formatPlatform('css');
-          files.forEach((file) => {
-            if (referenceTokenSet.responsive) {
-              const originalOutput = file.output as string;
-
-              // NOTE: No return character after original output as we have already added one there when we alphabetize
-              file.output =
-                referenceTokenSet.responsive.breakpoint === 'xs'
-                  ? originalOutput
-                  : `@media (min-width: ${getMediaQueryMinWidth(referenceTokenSet.responsive.breakpoint)}) {\n${originalOutput}}\n`;
-              file.breakpoint = referenceTokenSet.responsive.breakpoint;
-            }
-          });
-          tokenFiles = tokenFiles.concat(files);
-        }),
-      );
-
-      if (tokenSet.publicTokens?.length) {
         await Promise.all(
-          tokenSet.publicTokens.map(async (publicTokenSet) => {
-            const publicTokenDictionary = await sd.extend(
-              getPublicDictionaryConfig(
+          tokenSet.referenceTokens.map(async (referenceTokenSet) => {
+            const referenceTokenDictionary = await sd.extend(
+              getReferenceDictionaryConfig(
                 tokenConfig,
                 tokenSet,
-                publicTokenSet,
+                referenceTokenSet,
                 skyOptions,
               ),
             );
-            const files: {
-              output: unknown;
-              destination: string | undefined;
-              breakpoint?: Breakpoint;
-            }[] = await publicTokenDictionary.formatPlatform('css');
-            const test = await publicTokenDictionary.formatPlatform('json');
-            console.log('OMG WHAT HAPPENS');
-            console.log(test[0]);
-            publicApiFiles = publicApiFiles.concat(files);
+            const files: GeneratedFile[] =
+              await referenceTokenDictionary.formatPlatform('css');
+            files.forEach((file) => {
+              if (referenceTokenSet.responsive) {
+                const originalOutput = file.output as string;
+
+                // NOTE: No return character after original output as we have already added one there when we alphabetize
+                file.output =
+                  referenceTokenSet.responsive.breakpoint === 'xs'
+                    ? originalOutput
+                    : `@media (min-width: ${getMediaQueryMinWidth(referenceTokenSet.responsive.breakpoint)}) {\n${originalOutput}}\n`;
+                file.breakpoint = referenceTokenSet.responsive.breakpoint;
+              }
+            });
+            tokenFiles = tokenFiles.concat(files);
           }),
         );
       }
@@ -242,7 +220,6 @@ function getReferenceDictionaryConfig(
 function getPublicDictionaryConfig(
   tokenConfig: TokenConfig,
   tokenSet: TokenSet,
-  publicTokenSet: PublicTokenSet,
   skyOptions: SkyTokenOptions,
 ): SkyStyleDictionaryConfig {
   const config = {
@@ -250,13 +227,21 @@ function getPublicDictionaryConfig(
   };
 
   const rootPath = tokenConfig.rootPath || 'src/tokens/';
-  config.source = [`${rootPath}${tokenSet.path}`];
-  config.include = [
-    `${rootPath}${publicTokenSet.path}`,
-    ...tokenSet.referenceTokens.map(
+
+  if (tokenSet.sourcePath) {
+    config.source = [`${rootPath}${tokenSet.sourcePath}`];
+    config.include = [
+      `${rootPath}${tokenSet.path}`,
+      ...tokenSet.referenceTokens.map(
+        (referenceTokenSet) => `${rootPath}${referenceTokenSet.path}`,
+      ),
+    ];
+  } else {
+    config.source = [`${rootPath}${tokenSet.path}`];
+    config.include = tokenSet.referenceTokens.map(
       (referenceTokenSet) => `${rootPath}${referenceTokenSet.path}`,
-    ),
-  ];
+    );
+  }
 
   const cssOptions = (config.platforms.css.options ??= {});
 
@@ -267,9 +252,9 @@ function getPublicDictionaryConfig(
 
   config.platforms.css.files = [
     {
-      destination: `${tokenSet.name}/${publicTokenSet.name}.css`,
+      destination: `${tokenSet.name}/${tokenSet.name}.css`,
       format: 'css/alphabetize-variables',
-      filter: (token) => token.filePath.includes(publicTokenSet.path),
+      filter: (token) => token.filePath.includes(tokenSet.path),
     },
   ];
 
