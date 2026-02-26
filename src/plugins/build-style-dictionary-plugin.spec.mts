@@ -166,18 +166,10 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'rainbow-colors.json',
             },
           ],
-        },
-        {
-          name: 'public-colors',
-          type: 'public',
-          selector: '.sky-theme-rainbow',
-          path: 'public-colors.json',
-          sourcePath: 'base-rainbow.json',
-          outputPath: 'public-colors.css',
-          referenceTokens: [
+          publicTokens: [
             {
-              name: 'rainbow-colors',
-              path: 'rainbow-colors.json',
+              name: 'public-colors',
+              path: 'public-colors.json',
             },
           ],
         },
