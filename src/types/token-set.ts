@@ -1,3 +1,4 @@
+import { PublicTokenSet } from './public-token-set.js';
 import { ReferenceTokenSet } from './reference-token-set.js';
 
 export type TokenSet = {
@@ -6,4 +7,5 @@ export type TokenSet = {
   selector: string;
   outputPath: string;
   referenceTokens: ReferenceTokenSet[];
+  publicTokens?: PublicTokenSet[];
 };

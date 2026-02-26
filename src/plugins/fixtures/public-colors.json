@@ -1,0 +1,18 @@
+{
+  "theme": {
+    "color": {
+      "text": {
+        "default": {
+          "$type": "color",
+          "$value": "{color.text.default}"
+        }
+      },
+      "background": {
+        "danger": {
+          "$type": "color",
+          "$value": "{color.background.danger}"
+        }
+      }
+    }
+  }
+}

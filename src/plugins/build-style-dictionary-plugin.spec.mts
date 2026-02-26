@@ -26,6 +26,7 @@ describe('buildStyleDictionaryPlugin', () => {
     tokenConfig: TokenConfig,
     expectedEmittedFiles: { fileName: string; source: string }[],
     assetsCssMock: (basePath?: string) => Promise<string> = async () => '',
+    expectedEmittedPublicApiFile?: { source: string },
   ): Promise<void> {
     vi.spyOn(assetsUtils, 'generateAssetsCss').mockImplementation(
       assetsCssMock,
@@ -35,7 +36,11 @@ describe('buildStyleDictionaryPlugin', () => {
     await callGenerateBundle(plugin, emitFileSpy);
 
     // Each token set should generate both assets/scss/ and bundles/ files
-    expect(emitFileSpy).toHaveBeenCalledTimes(expectedEmittedFiles.length * 2);
+    expect(emitFileSpy).toHaveBeenCalledTimes(
+      expectedEmittedPublicApiFile
+        ? expectedEmittedFiles.length * 2 + 1
+        : expectedEmittedFiles.length * 2,
+    );
 
     for (const expectedFile of expectedEmittedFiles) {
       // Check for assets/scss/ file
@@ -54,6 +59,14 @@ describe('buildStyleDictionaryPlugin', () => {
         type: 'asset',
         fileName: bundleFileName,
         source: expectedFile.source,
+      });
+    }
+
+    if (expectedEmittedPublicApiFile) {
+      expect(emitFileSpy).toHaveBeenCalledWith({
+        type: 'asset',
+        fileName: 'bundles/public-api.css',
+        source: expectedEmittedPublicApiFile.source,
       });
     }
   }
@@ -135,6 +148,70 @@ describe('buildStyleDictionaryPlugin', () => {
       },
     ];
     await validate(tokenConfig, expectedEmittedFiles);
+  });
+
+  it('should create the public API styles when provided', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'rainbow.css',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+          publicTokens: [
+            {
+              name: 'public-colors',
+              path: 'public-colors.json',
+            },
+          ],
+        },
+      ],
+      publicApiClassesPaths: ['public-classes.css'],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/rainbow.css',
+        source: `.sky-theme-rainbow {
+  --rainbow-color-gray-1: #e2e3e7;
+  --rainbow-color-gray-2: #c0c2c5;
+  --rainbow-color-red-1: #fc0330;
+  --rainbow-color-red-2: #8a2538;
+  --rainbow-space-s: 10px;
+}
+.sky-theme-rainbow {
+  --sky-color-background-danger: var(--rainbow-color-gray-1);
+  --sky-color-text-default: var(--rainbow-color-red-1);
+}
+`,
+      },
+    ];
+
+    const expectedEmittedPublicApiFile = {
+      source: `.sky-theme-rainbow {
+  --sky-theme-color-background-danger: var(--sky-color-background-danger);
+  --sky-theme-color-text-default: var(--sky-color-text-default);
+}
+
+.sky-theme-color-text-default {
+  color: var(--sky-theme-color-text-default);
+}
+`,
+    };
+    await validate(
+      tokenConfig,
+      expectedEmittedFiles,
+      undefined,
+      expectedEmittedPublicApiFile,
+    );
   });
 
   it('should include the correct media queries for breakpoints', async () => {
