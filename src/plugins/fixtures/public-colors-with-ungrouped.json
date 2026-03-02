@@ -1,0 +1,28 @@
+{
+  "theme": {
+    "color": {
+      "$extensions": { "groupName": "Colors" },
+      "text": {
+        "$extensions": { "groupName": "Text Colors" },
+        "default": {
+          "$type": "color",
+          "$value": "{color.text.default}",
+          "$description": "The default text color.",
+          "$extensions": {
+            "name": "Default Text"
+          }
+        }
+      }
+    },
+    "spacing": {
+      "small": {
+        "$type": "dimension",
+        "$value": "{rainbow.space.s}",
+        "$description": "Small spacing value.",
+        "$extensions": {
+          "name": "Small Spacing"
+        }
+      }
+    }
+  }
+}

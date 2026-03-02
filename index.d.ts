@@ -3,3 +3,7 @@ export type { Responsive } from './src/types/responsive';
 export type { ReferenceTokenSet } from './src/types/reference-token-set';
 export type { TokenConfig } from './src/types/token-config';
 export type { TokenSet } from './src/types/token-set';
+export type { PublicTokenSet } from './src/types/public-token-set';
+export type { PublicApi } from './src/types/public-api';
+export type { PublicApiGroup } from './src/types/public-api-group';
+export type { PublicApiToken } from './src/types/public-api-token';

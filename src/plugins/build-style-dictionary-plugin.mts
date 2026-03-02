@@ -18,11 +18,14 @@ import {
   fixAssetsUrlValue,
 } from './shared/assets-utils.mjs';
 import { PublicTokenSet } from '../types/public-token-set.js';
+import { PublicApi } from '../types/public-api.js';
+import { PublicApiGroup } from '../types/public-api-group.js';
+import { PublicApiToken } from '../types/public-api-token.js';
 
 interface SkyStyleDictionaryConfig extends Config {
   platforms: {
     css: PlatformConfig;
-    json: PlatformConfig;
+    json?: PlatformConfig;
   };
 }
 
@@ -35,6 +38,7 @@ interface GeneratedFile {
 interface SkyTokenOptions {
   assetsBasePath: string;
   generateUrlAtProperties?: boolean;
+  showDescriptions?: boolean;
   selectorPrefix: string;
 }
 
@@ -48,16 +52,7 @@ const DEFAULT_SD_CONFIG: SkyStyleDictionaryConfig = {
         showFileHeader: false,
       },
       buildPath: `dist/`,
-    },
-    json: {
-      files: [
-        {
-          destination: 'output.json',
-          format: 'json',
-          options: {},
-        },
-      ],
-    },
+    }
   },
 };
 
@@ -65,6 +60,127 @@ function isUrlToken(token: Token): boolean {
   return (
     token.$extensions?.['com.blackbaud.developer.sky-token-format'] === 'url'
   );
+}
+
+function buildPublicApiGroups(
+  allTokens: Token[],
+  tokenTree: Record<string, unknown>,
+): PublicApi {
+  const result: PublicApi = {};
+
+  for (const token of allTokens) {
+    const groupPath: string[] = [];
+    let current: Record<string, unknown> = tokenTree;
+
+    for (const segment of token.path) {
+      current = current[segment] as Record<string, unknown>;
+      const extensions = current?.$extensions as
+        | Record<string, unknown>
+        | undefined;
+      if (extensions?.groupName) {
+        groupPath.push(extensions.groupName as string);
+      }
+    }
+
+    const tokenEntry: PublicApiToken = {
+      name: (token.$extensions?.name as string) ?? token.name,
+      cssProperty: `--${token.name}`,
+    };
+
+    if (token.$description) {
+      tokenEntry.description = token.$description;
+    }
+
+    if (token.$extensions?.deprecated) {
+      tokenEntry.deprecated = token.$extensions.deprecated as string;
+    }
+
+    if (groupPath.length === 0) {
+      result.tokens ??= [];
+      result.tokens.push(tokenEntry);
+    } else {
+      result.groups ??= [];
+      let currentGroups = result.groups;
+
+      for (let i = 0; i < groupPath.length; i++) {
+        const groupName = groupPath[i];
+        let group = currentGroups.find((g) => g.groupName === groupName);
+        if (!group) {
+          group = { groupName };
+          currentGroups.push(group);
+        }
+        if (i < groupPath.length - 1) {
+          group.groups ??= [];
+          currentGroups = group.groups;
+        } else {
+          group.tokens ??= [];
+          group.tokens.push(tokenEntry);
+        }
+      }
+    }
+  }
+
+  function cleanEmptyGroups(groups: PublicApiGroup[]): void {
+    for (const group of groups) {
+      if (group.groups) {
+        if (group.groups.length === 0) {
+          delete group.groups;
+        } else {
+          cleanEmptyGroups(group.groups);
+        }
+      }
+    }
+  }
+  if (result.groups) {
+    cleanEmptyGroups(result.groups);
+  }
+
+  return result;
+}
+
+function mergePublicApiGroupArrays(
+  target: PublicApiGroup[],
+  source: PublicApiGroup[],
+): void {
+  for (const srcGroup of source) {
+    const existing = target.find((g) => g.groupName === srcGroup.groupName);
+    if (existing) {
+      if (srcGroup.tokens) {
+        existing.tokens ??= [];
+        for (const token of srcGroup.tokens) {
+          if (
+            !existing.tokens.some((t) => t.cssProperty === token.cssProperty)
+          ) {
+            existing.tokens.push(token);
+          }
+        }
+      }
+      if (srcGroup.groups) {
+        existing.groups ??= [];
+        mergePublicApiGroupArrays(existing.groups, srcGroup.groups);
+      }
+    } else {
+      target.push(srcGroup);
+    }
+  }
+}
+
+function mergePublicApiResults(
+  target: PublicApi,
+  source: PublicApi,
+): void {
+  if (source.tokens) {
+    target.tokens ??= [];
+    for (const token of source.tokens) {
+      if (!target.tokens.some((t) => t.cssProperty === token.cssProperty)) {
+        target.tokens.push(token);
+      }
+    }
+  }
+  if (source.groups) {
+    target.groups ??= [];
+    mergePublicApiGroupArrays(target.groups, source.groups);
+  }
 }
 
 function getMediaQueryMinWidth(breakpoint: Breakpoint): string {
@@ -84,44 +200,37 @@ function getMediaQueryMinWidth(breakpoint: Breakpoint): string {
 async function generateDictionaryFiles(
   tokenConfig: TokenConfig,
   skyOptions: SkyTokenOptions,
-): Promise<{ tokenFiles: GeneratedFile[]; publicApiFiles: GeneratedFile[] }> {
+): Promise<{ tokenFiles: GeneratedFile[]; publicApiFiles: GeneratedFile[]; publicApiJsonFiles: GeneratedFile[] }> {
   const sd = new StyleDictionary(undefined);
+  const rootPath = tokenConfig.rootPath || 'src/tokens/';
 
-  let tokenFiles: GeneratedFile[] = [];
-  let publicApiFiles: GeneratedFile[] = [];
-
-  await Promise.all(
+  const results = await Promise.all(
     tokenConfig.tokenSets.map(async (tokenSet) => {
+      const setTokenFiles: GeneratedFile[] = [];
+      const setPublicApiFiles: GeneratedFile[] = [];
+      const setPublicApiJsonFiles: GeneratedFile[] = [];
+
       const tokenDictionary = await sd.extend(
-        getBaseDictionaryConfig(tokenConfig, tokenSet, {
+        getBaseDictionaryConfig(rootPath, tokenSet, {
           ...skyOptions,
           generateUrlAtProperties: true,
         }),
       );
 
-      const files: {
-        output: unknown;
-        destination: string | undefined;
-        breakpoint?: Breakpoint;
-      }[] = await tokenDictionary.formatPlatform('css');
+      const baseFiles: GeneratedFile[] = await tokenDictionary.formatPlatform('css');
+      setTokenFiles.push(...baseFiles);
 
-      tokenFiles = tokenFiles.concat(files);
-
-      await Promise.all(
+      const refResults = await Promise.all(
         tokenSet.referenceTokens.map(async (referenceTokenSet) => {
           const referenceTokenDictionary = await sd.extend(
             getReferenceDictionaryConfig(
-              tokenConfig,
+              rootPath,
               tokenSet,
               referenceTokenSet,
               skyOptions,
             ),
           );
-          const files: {
-            output: unknown;
-            destination: string | undefined;
-            breakpoint?: Breakpoint;
-          }[] = await referenceTokenDictionary.formatPlatform('css');
+          const files: GeneratedFile[] = await referenceTokenDictionary.formatPlatform('css');
           files.forEach((file) => {
             if (referenceTokenSet.responsive) {
               const originalOutput = file.output as string;
@@ -134,35 +243,38 @@ async function generateDictionaryFiles(
               file.breakpoint = referenceTokenSet.responsive.breakpoint;
             }
           });
-          tokenFiles = tokenFiles.concat(files);
+          return files;
         }),
       );
+      setTokenFiles.push(...refResults.flat());
 
       if (tokenSet.publicTokens?.length) {
-        await Promise.all(
+        const publicResults = await Promise.all(
           tokenSet.publicTokens.map(async (publicTokenSet) => {
             const publicTokenDictionary = await sd.extend(
               getPublicDictionaryConfig(
-                tokenConfig,
+                rootPath,
                 tokenSet,
                 publicTokenSet,
                 skyOptions,
               ),
             );
-            const files: {
-              output: unknown;
-              destination: string | undefined;
-              breakpoint?: Breakpoint;
-            }[] = await publicTokenDictionary.formatPlatform('css');
-            const test = await publicTokenDictionary.formatPlatform('json');
-            console.log('OMG WHAT HAPPENS');
-            console.log(test[0]);
-            publicApiFiles = publicApiFiles.concat(files);
+            const cssFiles = await publicTokenDictionary.formatPlatform('css') as GeneratedFile[];
+            const jsonFiles = await publicTokenDictionary.formatPlatform('json') as GeneratedFile[];
+            return { cssFiles, jsonFiles };
           }),
         );
+        setPublicApiFiles.push(...publicResults.flatMap((r) => r.cssFiles));
+        setPublicApiJsonFiles.push(...publicResults.flatMap((r) => r.jsonFiles));
       }
+
+      return { setTokenFiles, setPublicApiFiles, setPublicApiJsonFiles };
     }),
   );
+
+  const tokenFiles = results.flatMap((r) => r.setTokenFiles);
+  const publicApiFiles = results.flatMap((r) => r.setPublicApiFiles);
+  const publicApiJsonFiles = results.flatMap((r) => r.setPublicApiJsonFiles);
 
   // We need to order the files by breakpoint so that the media queries are seen by the browser in the correct order.
   // Media queries do not count towards css specificity, so the order in which they are defined matters.
@@ -173,19 +285,15 @@ async function generateDictionaryFiles(
     return aIndex - bIndex;
   });
 
-  return { tokenFiles, publicApiFiles };
+  return { tokenFiles, publicApiFiles, publicApiJsonFiles };
 }
 
 function getBaseDictionaryConfig(
-  tokenConfig: TokenConfig,
+  rootPath: string,
   tokenSet: TokenSet,
   skyOptions: SkyTokenOptions,
 ): SkyStyleDictionaryConfig {
-  const config = {
-    ...DEFAULT_SD_CONFIG,
-  };
-
-  const rootPath = tokenConfig.rootPath || 'src/tokens/';
+  const config = structuredClone(DEFAULT_SD_CONFIG);
 
   config.source = [`${rootPath}${tokenSet.path}`];
 
@@ -208,16 +316,12 @@ function getBaseDictionaryConfig(
 }
 
 function getReferenceDictionaryConfig(
-  tokenConfig: TokenConfig,
+  rootPath: string,
   tokenSet: TokenSet,
   referenceTokenSet: ReferenceTokenSet,
   skyOptions: SkyTokenOptions,
 ): SkyStyleDictionaryConfig {
-  const config = {
-    ...DEFAULT_SD_CONFIG,
-  };
-
-  const rootPath = tokenConfig.rootPath || 'src/tokens/';
+  const config = structuredClone(DEFAULT_SD_CONFIG);
   config.source = [`${rootPath}${tokenSet.path}`];
   config.include = [`${rootPath}${referenceTokenSet.path}`];
 
@@ -240,16 +344,12 @@ function getReferenceDictionaryConfig(
 }
 
 function getPublicDictionaryConfig(
-  tokenConfig: TokenConfig,
+  rootPath: string,
   tokenSet: TokenSet,
   publicTokenSet: PublicTokenSet,
   skyOptions: SkyTokenOptions,
 ): SkyStyleDictionaryConfig {
-  const config = {
-    ...DEFAULT_SD_CONFIG,
-  };
-
-  const rootPath = tokenConfig.rootPath || 'src/tokens/';
+  const config = structuredClone(DEFAULT_SD_CONFIG);
   config.source = [`${rootPath}${tokenSet.path}`];
   config.include = [
     `${rootPath}${publicTokenSet.path}`,
@@ -261,7 +361,7 @@ function getPublicDictionaryConfig(
   const cssOptions = (config.platforms.css.options ??= {});
 
   Object.assign(cssOptions, {
-    skyOptions,
+    skyOptions: { ...skyOptions, showDescriptions: true },
     selector: tokenSet.selector,
   });
 
@@ -272,6 +372,18 @@ function getPublicDictionaryConfig(
       filter: (token) => token.filePath.includes(publicTokenSet.path),
     },
   ];
+
+  config.platforms.json = {
+    transformGroup: 'custom/tokens-studio',
+    buildPath: 'dist/',
+    files: [
+      {
+        destination: `${tokenSet.name}/${publicTokenSet.name}.json`,
+        format: 'json/public-api',
+        filter: (token) => token.filePath.includes(publicTokenSet.path),
+      },
+    ],
+  };
 
   return config;
 }
@@ -368,12 +480,31 @@ export function buildStyleDictionaryPlugin(tokenConfig: TokenConfig): Plugin {
         outputReferences,
         outputReferenceFallbacks,
         usesDtcg: true,
+        ...(skyOptions.showDescriptions
+          ? {
+              formatting: {
+                commentStyle: 'long',
+                commentPosition: 'above',
+              },
+            }
+          : {}),
       });
 
       return `${properties ? properties + '\n\n' : ''}${skyOptions?.selectorPrefix ?? ''}${options.selector} {
 ${variables}
 }
 `;
+    },
+  });
+
+  StyleDictionary.registerFormat({
+    name: 'json/public-api',
+    format: function ({ dictionary }) {
+      const tokenTree = (
+        dictionary.unfilteredTokens ?? dictionary.tokens
+      ) as unknown as Record<string, unknown>;
+      const result = buildPublicApiGroups(dictionary.allTokens, tokenTree);
+      return JSON.stringify(result, null, 2);
     },
   });
 
@@ -414,13 +545,11 @@ ${variables}
     async generateBundle(): Promise<void> {
       const assetsBasePath = '../';
 
-      const { tokenFiles, publicApiFiles } = await generateDictionaryFiles(
-        tokenConfig,
-        {
+      const { tokenFiles, publicApiFiles, publicApiJsonFiles } =
+        await generateDictionaryFiles(tokenConfig, {
           assetsBasePath,
           selectorPrefix: '',
-        },
-      );
+        });
 
       const compositeFiles: Record<string, string> = {};
       const publicApiFileName = 'bundles/public-api.css';
@@ -471,6 +600,19 @@ ${variables}
           type: 'asset',
           fileName: fileName.replace('dist/', ''),
           source: fileContents,
+        });
+      }
+
+      const publicApiJsonData: PublicApi = {};
+      for (const file of publicApiJsonFiles) {
+        const parsed = JSON.parse(file.output as string) as PublicApi;
+        mergePublicApiResults(publicApiJsonData, parsed);
+      }
+      if (publicApiJsonData.groups || publicApiJsonData.tokens) {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'bundles/public-api.json',
+          source: JSON.stringify(publicApiJsonData, null, 2),
         });
       }
     },
