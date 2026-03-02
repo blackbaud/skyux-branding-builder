@@ -9,7 +9,7 @@
           "$value": "{color.text.default}",
           "$description": "The default text color.",
           "$extensions": {
-            "name": "Default Text"
+            "readableName": "Default Text"
           }
         }
       }
@@ -20,7 +20,7 @@
         "$value": "{rainbow.space.s}",
         "$description": "Small spacing value.",
         "$extensions": {
-          "name": "Small Spacing"
+          "readableName": "Small Spacing"
         }
       }
     }

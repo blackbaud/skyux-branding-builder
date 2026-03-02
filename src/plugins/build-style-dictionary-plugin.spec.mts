@@ -218,9 +218,11 @@ describe('buildStyleDictionaryPlugin', () => {
           groups: [
             {
               groupName: 'Colors',
+              description: 'All color tokens.',
               groups: [
                 {
                   groupName: 'Text Colors',
+                  description: 'Text color tokens.',
                   tokens: [
                     {
                       name: 'Default Text',
@@ -232,6 +234,7 @@ describe('buildStyleDictionaryPlugin', () => {
                 },
                 {
                   groupName: 'Background Colors',
+                  description: 'Background color tokens.',
                   tokens: [
                     {
                       name: 'Danger Background',
@@ -276,8 +279,8 @@ describe('buildStyleDictionaryPlugin', () => {
           ],
           publicTokens: [
             {
-              name: 'public-colors-with-ungrouped',
-              path: 'public-colors-with-ungrouped.json',
+              name: 'public-tokens-with-ungrouped',
+              path: 'public-tokens-with-ungrouped.json',
             },
           ],
         },
@@ -352,7 +355,7 @@ describe('buildStyleDictionaryPlugin', () => {
     );
   });
 
-  it('should fall back to token name and omit description when name and description $extensions are absent', async () => {
+  it('should fall back to token name and omit description when readableName and description $extensions are absent', async () => {
     const tokenConfig: TokenConfig = {
       rootPath: 'src/plugins/fixtures/',
       projectName: 'skyux-brand-test',
@@ -370,8 +373,8 @@ describe('buildStyleDictionaryPlugin', () => {
           ],
           publicTokens: [
             {
-              name: 'public-colors-no-extensions',
-              path: 'public-colors-no-extensions.json',
+              name: 'public-colors-no-name-description',
+              path: 'public-colors-no-name-description.json',
             },
           ],
         },
@@ -504,9 +507,11 @@ describe('buildStyleDictionaryPlugin', () => {
           groups: [
             {
               groupName: 'Colors',
+              description: 'All color tokens.',
               groups: [
                 {
                   groupName: 'Text Colors',
+                  description: 'Text color tokens.',
                   tokens: [
                     {
                       name: 'Default Text',
@@ -518,6 +523,7 @@ describe('buildStyleDictionaryPlugin', () => {
                 },
                 {
                   groupName: 'Background Colors',
+                  description: 'Background color tokens.',
                   tokens: [
                     {
                       name: 'Danger Background',

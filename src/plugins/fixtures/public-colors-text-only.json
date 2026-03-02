@@ -9,7 +9,7 @@
           "$value": "{color.text.default}",
           "$description": "The default text color.",
           "$extensions": {
-            "name": "Default Text"
+            "readableName": "Default Text"
           }
         }
       }

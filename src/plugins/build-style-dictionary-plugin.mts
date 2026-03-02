@@ -5,6 +5,7 @@ import StyleDictionary, {
   Config,
   PlatformConfig,
   Token,
+  TransformedTokens,
 } from 'style-dictionary';
 import { formattedVariables, sortByName } from 'style-dictionary/utils';
 import { getTransforms, register } from '@tokens-studio/sd-transforms';
@@ -63,26 +64,30 @@ function isUrlToken(token: Token): boolean {
 
 function buildPublicApiGroups(
   allTokens: Token[],
-  tokenTree: Record<string, unknown>,
+  tokenTree: TransformedTokens,
 ): PublicApi {
   const result: PublicApi = {};
 
   for (const token of allTokens) {
-    const groupPath: string[] = [];
-    let current: Record<string, unknown> = tokenTree;
+    // Walk the token's path through the raw token tree, collecting any ancestor
+    // nodes that declare a groupName extension. This becomes an ordered list of
+    // groups from outermost to innermost (e.g. [Colors, Text Colors]).
+    const groupPath: { groupName: string; description?: string }[] = [];
+    let current: TransformedTokens = tokenTree;
 
     for (const segment of token.path) {
-      current = current[segment] as Record<string, unknown>;
-      const extensions = current?.$extensions as
-        | Record<string, unknown>
-        | undefined;
-      if (extensions?.groupName) {
-        groupPath.push(extensions.groupName as string);
+      current = current[segment];
+      const node = current as unknown as Token;
+      if (node.$extensions?.groupName) {
+        groupPath.push({
+          groupName: node.$extensions.groupName as string,
+          description: node.$description,
+        });
       }
     }
 
     const tokenEntry: PublicApiToken = {
-      name: (token.$extensions?.name as string) ?? token.name,
+      name: (token.$extensions?.readableName as string) ?? token.name,
       cssProperty: `--${token.name}`,
     };
 
@@ -94,44 +99,37 @@ function buildPublicApiGroups(
       tokenEntry.deprecated = token.$extensions.deprecated as string;
     }
 
+    // Tokens with no group ancestry go to the top-level tokens array.
     if (groupPath.length === 0) {
       result.tokens ??= [];
       result.tokens.push(tokenEntry);
     } else {
+      // Walk (or create) the nested group structure, then place the token in
+      // the innermost group.
       result.groups ??= [];
       let currentGroups = result.groups;
 
       for (let i = 0; i < groupPath.length; i++) {
-        const groupName = groupPath[i];
+        const { groupName, description } = groupPath[i];
         let group = currentGroups.find((g) => g.groupName === groupName);
         if (!group) {
           group = { groupName };
           currentGroups.push(group);
         }
+        if (description && !group.description) {
+          group.description = description;
+        }
         if (i < groupPath.length - 1) {
+          // Intermediate group: descend into its subgroups.
           group.groups ??= [];
           currentGroups = group.groups;
         } else {
+          // Leaf group: append the token here.
           group.tokens ??= [];
           group.tokens.push(tokenEntry);
         }
       }
     }
-  }
-
-  function cleanEmptyGroups(groups: PublicApiGroup[]): void {
-    for (const group of groups) {
-      if (group.groups) {
-        if (group.groups.length === 0) {
-          delete group.groups;
-        } else {
-          cleanEmptyGroups(group.groups);
-        }
-      }
-    }
-  }
-  if (result.groups) {
-    cleanEmptyGroups(result.groups);
   }
 
   return result;
@@ -144,6 +142,9 @@ function mergePublicApiGroupArrays(
   for (const srcGroup of source) {
     const existing = target.find((g) => g.groupName === srcGroup.groupName);
     if (existing) {
+      if (srcGroup.description && !existing.description) {
+        existing.description = srcGroup.description;
+      }
       if (srcGroup.tokens) {
         existing.tokens ??= [];
         for (const token of srcGroup.tokens) {
@@ -499,9 +500,7 @@ ${variables}
   StyleDictionary.registerFormat({
     name: 'json/public-api',
     format: function ({ dictionary }) {
-      const tokenTree = (
-        dictionary.unfilteredTokens ?? dictionary.tokens
-      ) as unknown as Record<string, unknown>;
+      const tokenTree = dictionary.unfilteredTokens ?? dictionary.tokens;
       const result = buildPublicApiGroups(dictionary.allTokens, tokenTree);
       return JSON.stringify(result, null, 2);
     },
