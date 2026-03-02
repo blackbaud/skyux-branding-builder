@@ -369,7 +369,9 @@ function getPublicDictionaryConfig(
     {
       destination: `${tokenSet.name}/${publicTokenSet.name}.css`,
       format: 'css/alphabetize-variables',
-      filter: (token) => token.filePath.includes(publicTokenSet.path),
+      filter: (token) =>
+        path.normalize(token.filePath) ===
+        path.normalize(`${rootPath}${publicTokenSet.path}`),
     },
   ];
 
@@ -380,7 +382,9 @@ function getPublicDictionaryConfig(
       {
         destination: `${tokenSet.name}/${publicTokenSet.name}.json`,
         format: 'json/public-api',
-        filter: (token) => token.filePath.includes(publicTokenSet.path),
+        filter: (token) =>
+          path.normalize(token.filePath) ===
+          path.normalize(`${rootPath}${publicTokenSet.path}`),
       },
     ],
   };
