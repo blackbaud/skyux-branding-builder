@@ -183,7 +183,6 @@ describe('buildStyleDictionaryPlugin', () => {
           ],
         },
       ],
-      publicApiClassesPaths: ['public-classes.css'],
     };
 
     const expectedEmittedFiles: { fileName: string; source: string }[] = [
@@ -210,10 +209,6 @@ describe('buildStyleDictionaryPlugin', () => {
   --sky-theme-color-background-danger: var(--sky-color-background-danger);
   /* The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
-}
-
-.sky-theme-color-text-default {
-  color: var(--sky-theme-color-text-default);
 }
 `,
     };

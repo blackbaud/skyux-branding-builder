@@ -1,7 +1,6 @@
 import { sync } from 'glob';
 import { Plugin } from 'vite';
 import path from 'path';
-import { readFile } from 'fs/promises';
 import StyleDictionary, {
   Config,
   PlatformConfig,
@@ -576,17 +575,6 @@ ${variables}
         fileContents = fileContents.concat((file.output as string) ?? '');
 
         compositeFiles[publicApiFileName] = fileContents;
-      }
-
-      // Append publicApiClassesPaths files to the public API CSS
-      if (tokenConfig.publicApiClassesPaths?.length) {
-        const rootPath = tokenConfig.rootPath || 'src/tokens/';
-        for (const classPath of tokenConfig.publicApiClassesPaths) {
-          const fullPath = path.join(process.cwd(), rootPath, classPath);
-          const classContent = await readFile(fullPath, 'utf-8');
-          compositeFiles[publicApiFileName] =
-            (compositeFiles[publicApiFileName] || '') + '\n' + classContent;
-        }
       }
 
       for (const fileName of Object.keys(compositeFiles)) {

@@ -7,5 +7,4 @@ export type TokenConfig = {
   rootPath?: string;
   projectName: string;
   tokenSets: TokenSet[];
-  publicApiClassesPaths?: string[];
 };
