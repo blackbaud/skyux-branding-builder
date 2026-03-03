@@ -2,49 +2,28 @@ import { PublicApiClass } from '../../types/public-api-class.js';
 import { PublicApiClassGroup } from '../../types/public-api-class-group.js';
 import { PublicApiClasses } from '../../types/public-api-classes.js';
 
-function mergePublicApiClassGroupArrays(
-  target: PublicApiClassGroup[],
-  source: PublicApiClassGroup[],
-): void {
-  for (const srcGroup of source) {
-    const existing = target.find((g) => g.groupName === srcGroup.groupName);
-    if (existing) {
-      if (srcGroup.description && !existing.description) {
-        existing.description = srcGroup.description;
-      }
-      if (srcGroup.classes) {
-        existing.classes ??= [];
-        for (const cls of srcGroup.classes) {
-          if (!existing.classes.some((c: PublicApiClass) => c.cssClass === cls.cssClass)) {
-            existing.classes.push(cls);
-          }
-        }
-      }
-      if (srcGroup.groups) {
-        existing.groups ??= [];
-        mergePublicApiClassGroupArrays(existing.groups, srcGroup.groups);
-      }
-    } else {
-      target.push(srcGroup);
-    }
-  }
+export function extractCustomPropertyReferences(value: string): string[] {
+  return [...value.matchAll(/var\((--[^,)]+)/g)].map((m) => m[1].trim());
 }
 
-export function mergePublicApiClassesResults(
-  target: PublicApiClasses,
-  source: PublicApiClasses,
+export function validatePublicClassesCssProperties(
+  publicApiClasses: PublicApiClasses,
+  knownCssProperties: Set<string>,
+  setName: string,
 ): void {
-  if (source.classes) {
-    target.classes ??= [];
-    for (const cls of source.classes) {
-      if (!target.classes.some((c) => c.cssClass === cls.cssClass)) {
-        target.classes.push(cls);
-      }
-    }
+  const errors: string[] = [];
+
+  for (const cls of publicApiClasses.classes ?? []) {
+    checkClassCssProperties(cls.cssClass, cls.cssProperties, knownCssProperties, errors);
   }
-  if (source.groups) {
-    target.groups ??= [];
-    mergePublicApiClassGroupArrays(target.groups, source.groups);
+  for (const group of publicApiClasses.groups ?? []) {
+    walkGroupCssProperties(group, knownCssProperties, errors);
+  }
+
+  if (errors.length) {
+    throw new Error(
+      `Invalid CSS custom property references in "${setName}":\n${errors.join('\n')}`,
+    );
   }
 }
 
@@ -58,7 +37,6 @@ export function generatePublicClassGroupCss(
   if (group.description) {
     lines.push(`${indent}/* ${group.description} */`);
   }
-  lines.push('');
 
   if (group.classes) {
     for (const cls of group.classes) {
@@ -122,47 +100,77 @@ export function generatePublicClassesCss(
   return lines.join('\n');
 }
 
-export function extractVarReferences(value: string): string[] {
-  return [...value.matchAll(/var\((--[^,)]+)/g)].map((m) => m[1].trim());
+function mergePublicApiClassGroupArrays(
+  target: PublicApiClassGroup[],
+  source: PublicApiClassGroup[],
+): void {
+  for (const srcGroup of source) {
+    const existing = target.find((g) => g.groupName === srcGroup.groupName);
+    if (existing) {
+      if (srcGroup.description && !existing.description) {
+        existing.description = srcGroup.description;
+      }
+      if (srcGroup.classes) {
+        existing.classes ??= [];
+        for (const cls of srcGroup.classes) {
+          if (!existing.classes.some((c: PublicApiClass) => c.cssClass === cls.cssClass)) {
+            existing.classes.push(cls);
+          }
+        }
+      }
+      if (srcGroup.groups) {
+        existing.groups ??= [];
+        mergePublicApiClassGroupArrays(existing.groups, srcGroup.groups);
+      }
+    } else {
+      target.push(srcGroup);
+    }
+  }
 }
 
-export function validatePublicClassesCssProperties(
-  publicApiClasses: PublicApiClasses,
-  knownCssProperties: Set<string>,
-  setName: string,
+export function mergePublicApiClassesResults(
+  target: PublicApiClasses,
+  source: PublicApiClasses,
 ): void {
-  const errors: string[] = [];
-
-  function checkClass(cssClass: string, cssProperties: Record<string, string> | undefined): void {
-    if (!cssProperties) return;
-    for (const value of Object.values(cssProperties)) {
-      for (const ref of extractVarReferences(value)) {
-        if (!knownCssProperties.has(ref)) {
-          errors.push(`  .${cssClass}: "${ref}" is not defined in publicTokens`);
-        }
+  if (source.classes) {
+    target.classes ??= [];
+    for (const cls of source.classes) {
+      if (!target.classes.some((c) => c.cssClass === cls.cssClass)) {
+        target.classes.push(cls);
       }
     }
   }
+  if (source.groups) {
+    target.groups ??= [];
+    mergePublicApiClassGroupArrays(target.groups, source.groups);
+  }
+}
 
-  function walkGroup(group: PublicApiClassGroup): void {
-    for (const cls of group.classes ?? []) {
-      checkClass(cls.cssClass, cls.cssProperties);
+function checkClassCssProperties(
+  cssClass: string,
+  cssProperties: Record<string, string> | undefined,
+  knownCssProperties: Set<string>,
+  errors: string[],
+): void {
+  if (!cssProperties) return;
+  for (const value of Object.values(cssProperties)) {
+    for (const ref of extractCustomPropertyReferences(value)) {
+      if (!knownCssProperties.has(ref)) {
+        errors.push(`  .${cssClass}: "${ref}" is not defined in publicTokens`);
+      }
     }
-    for (const subgroup of group.groups ?? []) {
-      walkGroup(subgroup);
-    }
   }
+}
 
-  for (const cls of publicApiClasses.classes ?? []) {
-    checkClass(cls.cssClass, cls.cssProperties);
+function walkGroupCssProperties(
+  group: PublicApiClassGroup,
+  knownCssProperties: Set<string>,
+  errors: string[],
+): void {
+  for (const cls of group.classes ?? []) {
+    checkClassCssProperties(cls.cssClass, cls.cssProperties, knownCssProperties, errors);
   }
-  for (const group of publicApiClasses.groups ?? []) {
-    walkGroup(group);
-  }
-
-  if (errors.length) {
-    throw new Error(
-      `Invalid CSS custom property references in "${setName}":\n${errors.join('\n')}`,
-    );
+  for (const subgroup of group.groups ?? []) {
+    walkGroupCssProperties(subgroup, knownCssProperties, errors);
   }
 }

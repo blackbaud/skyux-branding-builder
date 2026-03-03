@@ -751,7 +751,6 @@ describe('buildStyleDictionaryPlugin', () => {
       source: `.sky-theme-rainbow {
   /* Margin top */
   /* Use these classes to add a top margin to an element. */
-
   /* Top x-small margin. */
   .sky-theme-margin-top-xs {
     margin-top: 0.5rem;
@@ -855,10 +854,8 @@ describe('buildStyleDictionaryPlugin', () => {
   }
 
   /* Colors */
-
   /* Text Colors */
   /* Text color classes. */
-
   .sky-theme-text-default {
     color: black;
   }
@@ -1082,6 +1079,131 @@ describe('buildStyleDictionaryPlugin', () => {
       expectedEmittedPublicApiFile,
       expectedEmittedPublicApiJsonFile,
       expectedEmittedPublicApiClassesValidRefsJsonFile,
+    );
+  });
+
+  it('should deduplicate classes across multiple publicClasses sets in JSON output', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'rainbow.css',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+          publicClasses: [
+            {
+              name: 'public-classes-grouped',
+              path: 'public-classes-grouped.json',
+            },
+            {
+              // This set overlaps on sky-theme-margin-top-xs; the first occurrence wins.
+              name: 'public-classes-grouped-overlap',
+              path: 'public-classes-grouped-overlap.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/rainbow.css',
+        source: `.sky-theme-rainbow {
+  --rainbow-color-gray-1: #e2e3e7;
+  --rainbow-color-gray-2: #c0c2c5;
+  --rainbow-color-red-1: #fc0330;
+  --rainbow-color-red-2: #8a2538;
+  --rainbow-space-s: 10px;
+}
+.sky-theme-rainbow {
+  --sky-color-background-danger: var(--rainbow-color-gray-1);
+  --sky-color-text-default: var(--rainbow-color-red-1);
+}
+`,
+      },
+    ];
+
+    // Both class sets emit their own CSS block into bundles/public-api.css; dedup only applies to the JSON.
+    const expectedEmittedPublicApiFile = {
+      source: `.sky-theme-rainbow {
+  /* Margin top */
+  /* Use these classes to add a top margin to an element. */
+  /* Top x-small margin. */
+  .sky-theme-margin-top-xs {
+    margin-top: 0.5rem;
+  }
+
+  .sky-theme-margin-top-s {
+    margin-top: 1rem;
+  }
+
+}
+.sky-theme-rainbow {
+  /* Margin top */
+  /* Use these classes to add a top margin to an element. */
+  /* Top x-small margin. */
+  .sky-theme-margin-top-xs {
+    margin-top: 0.5rem;
+  }
+
+  .sky-theme-margin-top-l {
+    margin-top: 2rem;
+  }
+
+}
+`,
+    };
+
+    // The JSON should contain sky-theme-margin-top-xs exactly once (first occurrence wins),
+    // sky-theme-margin-top-s from the first set, and sky-theme-margin-top-l from the second.
+    const expectedEmittedPublicApiClassesJsonFile = {
+      source: JSON.stringify(
+        {
+          groups: [
+            {
+              groupName: 'Margin top',
+              description: 'Use these classes to add a top margin to an element.',
+              classes: [
+                {
+                  name: 'Top x-small',
+                  cssClass: 'sky-theme-margin-top-xs',
+                  description: 'Top x-small margin.',
+                  cssProperties: { 'margin-top': '0.5rem' },
+                },
+                {
+                  name: 'Top small',
+                  cssClass: 'sky-theme-margin-top-s',
+                  cssProperties: { 'margin-top': '1rem' },
+                },
+                {
+                  name: 'Top large',
+                  cssClass: 'sky-theme-margin-top-l',
+                  cssProperties: { 'margin-top': '2rem' },
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    };
+
+    await validate(
+      tokenConfig,
+      expectedEmittedFiles,
+      undefined,
+      expectedEmittedPublicApiFile,
+      undefined,
+      expectedEmittedPublicApiClassesJsonFile,
     );
   });
 });
