@@ -1,8 +1,8 @@
 import { PublicApiToken } from './public-api-token.js';
 
-export interface PublicApiGroup {
+export interface PublicApiTokenGroup {
   groupName: string;
   description?: string;
-  groups?: PublicApiGroup[];
+  groups?: PublicApiTokenGroup[];
   tokens?: PublicApiToken[];
 }

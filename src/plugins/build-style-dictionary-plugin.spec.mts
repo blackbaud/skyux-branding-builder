@@ -76,7 +76,7 @@ describe('buildStyleDictionaryPlugin', () => {
     if (expectedEmittedPublicApiJsonFile) {
       expect(emitFileSpy).toHaveBeenCalledWith({
         type: 'asset',
-        fileName: 'bundles/public-api.json',
+        fileName: 'bundles/public-api-tokens.json',
         source: expectedEmittedPublicApiJsonFile.source,
       });
     }

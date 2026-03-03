@@ -5,4 +5,5 @@ export interface PublicApiClassGroup {
   description?: string;
   groups?: PublicApiClassGroup[];
   classes?: PublicApiClass[];
+  groupImageToken?: string;
 }

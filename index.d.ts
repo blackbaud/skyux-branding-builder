@@ -6,7 +6,7 @@ export type { TokenSet } from './src/types/token-set';
 export type { PublicTokenSet } from './src/types/public-token-set';
 export type { PublicClassSet } from './src/types/public-class-set';
 export type { PublicApiTokens } from './src/types/public-api-tokens';
-export type { PublicApiGroup } from './src/types/public-api-group';
+export type { PublicApiTokenGroup as PublicApiGroup } from './src/types/public-api-token-group';
 export type { PublicApiToken } from './src/types/public-api-token';
 export type { PublicApiClasses } from './src/types/public-api-classes';
 export type { PublicApiClassGroup } from './src/types/public-api-class-group';

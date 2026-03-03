@@ -1,7 +1,7 @@
-import { PublicApiGroup } from './public-api-group.js';
+import { PublicApiTokenGroup } from './public-api-token-group.js';
 import { PublicApiToken } from './public-api-token.js';
 
 export interface PublicApiTokens {
-  groups?: PublicApiGroup[];
+  groups?: PublicApiTokenGroup[];
   tokens?: PublicApiToken[];
 }
