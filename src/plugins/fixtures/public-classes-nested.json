@@ -1,0 +1,32 @@
+{
+  "classes": [
+    {
+      "name": "Ungrouped",
+      "cssClass": "sky-theme-ungrouped",
+      "description": "An ungrouped class.",
+      "cssProperties": {
+        "display": "block"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "groupName": "Colors",
+      "groups": [
+        {
+          "groupName": "Text Colors",
+          "description": "Text color classes.",
+          "classes": [
+            {
+              "name": "Default Text",
+              "cssClass": "sky-theme-text-default",
+              "cssProperties": {
+                "color": "black"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { readFile } from 'fs/promises';
 import { sync } from 'glob';
 import { Plugin } from 'vite';
 import path from 'path';
@@ -18,9 +19,12 @@ import {
   fixAssetsUrlValue,
 } from './shared/assets-utils.mjs';
 import { PublicTokenSet } from '../types/public-token-set.js';
-import { PublicApi } from '../types/public-api.js';
+import { PublicApiTokens } from '../types/public-api-tokens.js';
 import { PublicApiGroup } from '../types/public-api-group.js';
 import { PublicApiToken } from '../types/public-api-token.js';
+import { PublicApiClasses } from '../types/public-api-classes.js';
+import { PublicApiClassGroup } from '../types/public-api-class-group.js';
+import { PublicApiClass } from '../types/public-api-class.js';
 
 interface SkyStyleDictionaryConfig extends Config {
   platforms: {
@@ -65,8 +69,8 @@ function isUrlToken(token: Token): boolean {
 function buildPublicApiGroups(
   allTokens: Token[],
   tokenTree: TransformedTokens,
-): PublicApi {
-  const result: PublicApi = {};
+): PublicApiTokens {
+  const result: PublicApiTokens = {};
 
   for (const token of allTokens) {
     // Walk the token's path through the raw token tree, collecting any ancestor
@@ -166,8 +170,8 @@ function mergePublicApiGroupArrays(
 }
 
 function mergePublicApiResults(
-  target: PublicApi,
-  source: PublicApi,
+  target: PublicApiTokens,
+  source: PublicApiTokens,
 ): void {
   if (source.tokens) {
     target.tokens ??= [];
@@ -180,6 +184,52 @@ function mergePublicApiResults(
   if (source.groups) {
     target.groups ??= [];
     mergePublicApiGroupArrays(target.groups, source.groups);
+  }
+}
+
+function mergePublicApiClassGroupArrays(
+  target: PublicApiClassGroup[],
+  source: PublicApiClassGroup[],
+): void {
+  for (const srcGroup of source) {
+    const existing = target.find((g) => g.groupName === srcGroup.groupName);
+    if (existing) {
+      if (srcGroup.description && !existing.description) {
+        existing.description = srcGroup.description;
+      }
+      if (srcGroup.classes) {
+        existing.classes ??= [];
+        for (const cls of srcGroup.classes) {
+          if (!existing.classes.some((c: PublicApiClass) => c.cssClass === cls.cssClass)) {
+            existing.classes.push(cls);
+          }
+        }
+      }
+      if (srcGroup.groups) {
+        existing.groups ??= [];
+        mergePublicApiClassGroupArrays(existing.groups, srcGroup.groups);
+      }
+    } else {
+      target.push(srcGroup);
+    }
+  }
+}
+
+function mergePublicApiClassesResults(
+  target: PublicApiClasses,
+  source: PublicApiClasses,
+): void {
+  if (source.classes) {
+    target.classes ??= [];
+    for (const cls of source.classes) {
+      if (!target.classes.some((c) => c.cssClass === cls.cssClass)) {
+        target.classes.push(cls);
+      }
+    }
+  }
+  if (source.groups) {
+    target.groups ??= [];
+    mergePublicApiClassGroupArrays(target.groups, source.groups);
   }
 }
 
@@ -197,10 +247,162 @@ function getMediaQueryMinWidth(breakpoint: Breakpoint): string {
   }
 }
 
+function generatePublicClassGroupCss(
+  group: PublicApiClassGroup,
+  indent: string,
+): string {
+  const lines: string[] = [];
+
+  lines.push(`${indent}/* ${group.groupName} */`);
+  if (group.description) {
+    lines.push(`${indent}/* ${group.description} */`);
+  }
+  lines.push('');
+
+  if (group.classes) {
+    for (const cls of group.classes) {
+      if (cls.description) {
+        lines.push(`${indent}/* ${cls.description} */`);
+      }
+      lines.push(`${indent}.${cls.cssClass} {`);
+      if (cls.cssProperties) {
+        for (const [prop, value] of Object.entries(cls.cssProperties)) {
+          lines.push(`${indent}  ${prop}: ${value};`);
+        }
+      }
+      lines.push(`${indent}}`);
+      lines.push('');
+    }
+  }
+
+  if (group.groups) {
+    for (const subgroup of group.groups) {
+      lines.push(generatePublicClassGroupCss(subgroup, indent));
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function generatePublicClassesCss(
+  publicApiClasses: PublicApiClasses,
+  selector: string,
+): string {
+  const lines: string[] = [];
+  const indent = '  ';
+
+  lines.push(`${selector} {`);
+
+  if (publicApiClasses.classes) {
+    for (const cls of publicApiClasses.classes) {
+      if (cls.description) {
+        lines.push(`${indent}/* ${cls.description} */`);
+      }
+      lines.push(`${indent}.${cls.cssClass} {`);
+      if (cls.cssProperties) {
+        for (const [prop, value] of Object.entries(cls.cssProperties)) {
+          lines.push(`${indent}  ${prop}: ${value};`);
+        }
+      }
+      lines.push(`${indent}}`);
+      lines.push('');
+    }
+  }
+
+  if (publicApiClasses.groups) {
+    for (const group of publicApiClasses.groups) {
+      lines.push(generatePublicClassGroupCss(group, indent));
+    }
+  }
+
+  lines.push('}');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+function collectGroupCssProperties(
+  group: PublicApiGroup,
+  result: Set<string>,
+): void {
+  if (group.tokens) {
+    for (const token of group.tokens) {
+      result.add(token.cssProperty);
+    }
+  }
+  if (group.groups) {
+    for (const subgroup of group.groups) {
+      collectGroupCssProperties(subgroup, result);
+    }
+  }
+}
+
+function collectPublicTokenCssProperties(
+  api: PublicApiTokens,
+  result = new Set<string>(),
+): Set<string> {
+  if (api.tokens) {
+    for (const token of api.tokens) {
+      result.add(token.cssProperty);
+    }
+  }
+  if (api.groups) {
+    for (const group of api.groups) {
+      collectGroupCssProperties(group, result);
+    }
+  }
+  return result;
+}
+
+function extractVarReferences(value: string): string[] {
+  return [...value.matchAll(/var\((--[^,)]+)/g)].map((m) => m[1].trim());
+}
+
+function validatePublicClassesCssProperties(
+  publicApiClasses: PublicApiClasses,
+  knownCssProperties: Set<string>,
+  setName: string,
+): void {
+  const errors: string[] = [];
+
+  function checkClass(cssClass: string, cssProperties: Record<string, string> | undefined): void {
+    if (!cssProperties) return;
+    for (const value of Object.values(cssProperties)) {
+      for (const ref of extractVarReferences(value)) {
+        if (!knownCssProperties.has(ref)) {
+          errors.push(`  .${cssClass}: "${ref}" is not defined in publicTokens`);
+        }
+      }
+    }
+  }
+
+  function walkGroup(group: PublicApiClassGroup): void {
+    for (const cls of group.classes ?? []) {
+      checkClass(cls.cssClass, cls.cssProperties);
+    }
+    for (const subgroup of group.groups ?? []) {
+      walkGroup(subgroup);
+    }
+  }
+
+  for (const cls of publicApiClasses.classes ?? []) {
+    checkClass(cls.cssClass, cls.cssProperties);
+  }
+  for (const group of publicApiClasses.groups ?? []) {
+    walkGroup(group);
+  }
+
+  if (errors.length) {
+    throw new Error(
+      `Invalid CSS custom property references in "${setName}":\n${errors.join('\n')}`,
+    );
+  }
+}
+
 async function generateDictionaryFiles(
   tokenConfig: TokenConfig,
   skyOptions: SkyTokenOptions,
-): Promise<{ tokenFiles: GeneratedFile[]; publicApiFiles: GeneratedFile[]; publicApiJsonFiles: GeneratedFile[] }> {
+): Promise<{ tokenFiles: GeneratedFile[]; publicApiFiles: GeneratedFile[]; publicApiJsonFiles: GeneratedFile[]; publicClassFiles: GeneratedFile[]; publicClassJsonFiles: GeneratedFile[] }> {
   const sd = new StyleDictionary(undefined);
   const rootPath = tokenConfig.rootPath || 'src/tokens/';
 
@@ -209,6 +411,8 @@ async function generateDictionaryFiles(
       const setTokenFiles: GeneratedFile[] = [];
       const setPublicApiFiles: GeneratedFile[] = [];
       const setPublicApiJsonFiles: GeneratedFile[] = [];
+      const setPublicClassFiles: GeneratedFile[] = [];
+      const setPublicClassJsonFiles: GeneratedFile[] = [];
 
       const tokenDictionary = await sd.extend(
         getBaseDictionaryConfig(rootPath, tokenSet, {
@@ -268,13 +472,47 @@ async function generateDictionaryFiles(
         setPublicApiJsonFiles.push(...publicResults.flatMap((r) => r.jsonFiles));
       }
 
-      return { setTokenFiles, setPublicApiFiles, setPublicApiJsonFiles };
+      if (tokenSet.publicClasses?.length) {
+        // Build the set of known CSS custom properties from this token set's public tokens.
+        const knownCssProperties = new Set<string>();
+        for (const file of setPublicApiJsonFiles) {
+          const parsed = JSON.parse(file.output as string) as PublicApiTokens;
+          collectPublicTokenCssProperties(parsed, knownCssProperties);
+        }
+
+        const classResults = await Promise.all(
+          tokenSet.publicClasses.map(async (publicClassSet) => {
+            const json = await readFile(
+              path.join(process.cwd(), `${rootPath}${publicClassSet.path}`),
+              'utf-8',
+            );
+            const publicApiClasses = JSON.parse(json) as PublicApiClasses;
+            validatePublicClassesCssProperties(publicApiClasses, knownCssProperties, publicClassSet.name);
+            return {
+              css: {
+                output: generatePublicClassesCss(publicApiClasses, tokenSet.selector),
+                destination: `${tokenSet.name}/${publicClassSet.name}.css`,
+              },
+              json: {
+                output: JSON.stringify(publicApiClasses),
+                destination: `${tokenSet.name}/${publicClassSet.name}.json`,
+              },
+            };
+          }),
+        );
+        setPublicClassFiles.push(...classResults.map((r) => r.css));
+        setPublicClassJsonFiles.push(...classResults.map((r) => r.json));
+      }
+
+      return { setTokenFiles, setPublicApiFiles, setPublicApiJsonFiles, setPublicClassFiles, setPublicClassJsonFiles };
     }),
   );
 
   const tokenFiles = results.flatMap((r) => r.setTokenFiles);
   const publicApiFiles = results.flatMap((r) => r.setPublicApiFiles);
   const publicApiJsonFiles = results.flatMap((r) => r.setPublicApiJsonFiles);
+  const publicClassFiles = results.flatMap((r) => r.setPublicClassFiles);
+  const publicClassJsonFiles = results.flatMap((r) => r.setPublicClassJsonFiles);
 
   // We need to order the files by breakpoint so that the media queries are seen by the browser in the correct order.
   // Media queries do not count towards css specificity, so the order in which they are defined matters.
@@ -285,7 +523,7 @@ async function generateDictionaryFiles(
     return aIndex - bIndex;
   });
 
-  return { tokenFiles, publicApiFiles, publicApiJsonFiles };
+  return { tokenFiles, publicApiFiles, publicApiJsonFiles, publicClassFiles, publicClassJsonFiles };
 }
 
 function getBaseDictionaryConfig(
@@ -547,7 +785,7 @@ ${variables}
     async generateBundle(): Promise<void> {
       const assetsBasePath = '../';
 
-      const { tokenFiles, publicApiFiles, publicApiJsonFiles } =
+      const { tokenFiles, publicApiFiles, publicApiJsonFiles, publicClassFiles, publicClassJsonFiles } =
         await generateDictionaryFiles(tokenConfig, {
           assetsBasePath,
           selectorPrefix: '',
@@ -580,6 +818,13 @@ ${variables}
         compositeFiles[publicApiFileName] = fileContents;
       }
 
+      for (const file of publicClassFiles) {
+        let fileContents = compositeFiles[publicApiFileName] || '';
+        fileContents = fileContents.concat((file.output as string) ?? '');
+
+        compositeFiles[publicApiFileName] = fileContents;
+      }
+
       for (const fileName of Object.keys(compositeFiles)) {
         const fileContents = await addAssetsCss(
           tokenConfig,
@@ -594,9 +839,9 @@ ${variables}
         });
       }
 
-      const publicApiJsonData: PublicApi = {};
+      const publicApiJsonData: PublicApiTokens = {};
       for (const file of publicApiJsonFiles) {
-        const parsed = JSON.parse(file.output as string) as PublicApi;
+        const parsed = JSON.parse(file.output as string) as PublicApiTokens;
         mergePublicApiResults(publicApiJsonData, parsed);
       }
       if (publicApiJsonData.groups || publicApiJsonData.tokens) {
@@ -604,6 +849,19 @@ ${variables}
           type: 'asset',
           fileName: 'bundles/public-api.json',
           source: JSON.stringify(publicApiJsonData, null, 2),
+        });
+      }
+
+      const publicApiClassesJsonData: PublicApiClasses = {};
+      for (const file of publicClassJsonFiles) {
+        const parsed = JSON.parse(file.output as string) as PublicApiClasses;
+        mergePublicApiClassesResults(publicApiClassesJsonData, parsed);
+      }
+      if (publicApiClassesJsonData.groups || publicApiClassesJsonData.classes) {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'bundles/public-api-classes.json',
+          source: JSON.stringify(publicApiClassesJsonData, null, 2),
         });
       }
     },
