@@ -77,36 +77,6 @@ export function buildPublicApiGroups(
   return result;
 }
 
-function mergePublicApiGroupArrays(
-  target: PublicApiTokenGroup[],
-  source: PublicApiTokenGroup[],
-): void {
-  for (const srcGroup of source) {
-    const existing = target.find((g) => g.groupName === srcGroup.groupName);
-    if (existing) {
-      if (srcGroup.description && !existing.description) {
-        existing.description = srcGroup.description;
-      }
-      if (srcGroup.tokens) {
-        existing.tokens ??= [];
-        for (const token of srcGroup.tokens) {
-          if (
-            !existing.tokens.some((t) => t.cssProperty === token.cssProperty)
-          ) {
-            existing.tokens.push(token);
-          }
-        }
-      }
-      if (srcGroup.groups) {
-        existing.groups ??= [];
-        mergePublicApiGroupArrays(existing.groups, srcGroup.groups);
-      }
-    } else {
-      target.push(srcGroup);
-    }
-  }
-}
-
 export function mergePublicApiResults(
   target: PublicApiTokens,
   source: PublicApiTokens,
@@ -140,6 +110,36 @@ export function collectPublicTokenCssProperties(
     }
   }
   return result;
+}
+
+function mergePublicApiGroupArrays(
+  target: PublicApiTokenGroup[],
+  source: PublicApiTokenGroup[],
+): void {
+  for (const srcGroup of source) {
+    const existing = target.find((g) => g.groupName === srcGroup.groupName);
+    if (existing) {
+      if (srcGroup.description && !existing.description) {
+        existing.description = srcGroup.description;
+      }
+      if (srcGroup.tokens) {
+        existing.tokens ??= [];
+        for (const token of srcGroup.tokens) {
+          if (
+            !existing.tokens.some((t) => t.cssProperty === token.cssProperty)
+          ) {
+            existing.tokens.push(token);
+          }
+        }
+      }
+      if (srcGroup.groups) {
+        existing.groups ??= [];
+        mergePublicApiGroupArrays(existing.groups, srcGroup.groups);
+      }
+    } else {
+      target.push(srcGroup);
+    }
+  }
 }
 
 function collectGroupCssProperties(

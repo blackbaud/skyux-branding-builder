@@ -2,8 +2,29 @@ import { PublicApiClass } from '../../types/public-api-class.js';
 import { PublicApiClassGroup } from '../../types/public-api-class-group.js';
 import { PublicApiClasses } from '../../types/public-api-classes.js';
 
-export function extractCustomPropertyReferences(value: string): string[] {
-  return [...value.matchAll(/var\((--[^,)]+)/g)].map((m) => m[1].trim());
+export function generatePublicClassesCss(
+  publicApiClasses: PublicApiClasses,
+  selector: string,
+): string {
+  const lines: string[] = [];
+  const indent = '  ';
+
+  lines.push(`${selector} {`);
+
+  for (const cls of publicApiClasses.classes ?? []) {
+    lines.push(generatePublicClassCss(cls, indent));
+  }
+
+  if (publicApiClasses.groups) {
+    for (const group of publicApiClasses.groups) {
+      lines.push(generatePublicClassGroupCss(group, indent));
+    }
+  }
+
+  lines.push('}');
+  lines.push('');
+
+  return lines.join('\n');
 }
 
 export function validatePublicClassesCssProperties(
@@ -27,7 +48,46 @@ export function validatePublicClassesCssProperties(
   }
 }
 
-export function generatePublicClassGroupCss(
+export function mergePublicApiClassesResults(
+  target: PublicApiClasses,
+  source: PublicApiClasses,
+): void {
+  if (source.classes) {
+    target.classes ??= [];
+    for (const cls of source.classes) {
+      if (!target.classes.some((c) => c.cssClass === cls.cssClass)) {
+        target.classes.push(cls);
+      }
+    }
+  }
+  if (source.groups) {
+    target.groups ??= [];
+    mergePublicApiClassGroupArrays(target.groups, source.groups);
+  }
+}
+
+function generatePublicClassCss(
+  cls: PublicApiClass,
+  indent: string,
+): string {
+  const lines: string[] = [];
+
+  if (cls.description) {
+    lines.push(`${indent}/* ${cls.description} */`);
+  }
+  lines.push(`${indent}.${cls.cssClass} {`);
+  if (cls.cssProperties) {
+    for (const [prop, value] of Object.entries(cls.cssProperties)) {
+      lines.push(`${indent}  ${prop}: ${value};`);
+    }
+  }
+  lines.push(`${indent}}`);
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+function generatePublicClassGroupCss(
   group: PublicApiClassGroup,
   indent: string,
 ): string {
@@ -38,64 +98,13 @@ export function generatePublicClassGroupCss(
     lines.push(`${indent}/* ${group.description} */`);
   }
 
-  if (group.classes) {
-    for (const cls of group.classes) {
-      if (cls.description) {
-        lines.push(`${indent}/* ${cls.description} */`);
-      }
-      lines.push(`${indent}.${cls.cssClass} {`);
-      if (cls.cssProperties) {
-        for (const [prop, value] of Object.entries(cls.cssProperties)) {
-          lines.push(`${indent}  ${prop}: ${value};`);
-        }
-      }
-      lines.push(`${indent}}`);
-      lines.push('');
-    }
+  for (const cls of group.classes ?? []) {
+    lines.push(generatePublicClassCss(cls, indent));
   }
 
-  if (group.groups) {
-    for (const subgroup of group.groups) {
-      lines.push(generatePublicClassGroupCss(subgroup, indent));
-    }
+  for (const subgroup of group.groups ?? []) {
+    lines.push(generatePublicClassGroupCss(subgroup, indent));
   }
-
-  return lines.join('\n');
-}
-
-export function generatePublicClassesCss(
-  publicApiClasses: PublicApiClasses,
-  selector: string,
-): string {
-  const lines: string[] = [];
-  const indent = '  ';
-
-  lines.push(`${selector} {`);
-
-  if (publicApiClasses.classes) {
-    for (const cls of publicApiClasses.classes) {
-      if (cls.description) {
-        lines.push(`${indent}/* ${cls.description} */`);
-      }
-      lines.push(`${indent}.${cls.cssClass} {`);
-      if (cls.cssProperties) {
-        for (const [prop, value] of Object.entries(cls.cssProperties)) {
-          lines.push(`${indent}  ${prop}: ${value};`);
-        }
-      }
-      lines.push(`${indent}}`);
-      lines.push('');
-    }
-  }
-
-  if (publicApiClasses.groups) {
-    for (const group of publicApiClasses.groups) {
-      lines.push(generatePublicClassGroupCss(group, indent));
-    }
-  }
-
-  lines.push('}');
-  lines.push('');
 
   return lines.join('\n');
 }
@@ -128,24 +137,6 @@ function mergePublicApiClassGroupArrays(
   }
 }
 
-export function mergePublicApiClassesResults(
-  target: PublicApiClasses,
-  source: PublicApiClasses,
-): void {
-  if (source.classes) {
-    target.classes ??= [];
-    for (const cls of source.classes) {
-      if (!target.classes.some((c) => c.cssClass === cls.cssClass)) {
-        target.classes.push(cls);
-      }
-    }
-  }
-  if (source.groups) {
-    target.groups ??= [];
-    mergePublicApiClassGroupArrays(target.groups, source.groups);
-  }
-}
-
 function checkClassCssProperties(
   cssClass: string,
   cssProperties: Record<string, string> | undefined,
@@ -173,4 +164,8 @@ function walkGroupCssProperties(
   for (const subgroup of group.groups ?? []) {
     walkGroupCssProperties(subgroup, knownCssProperties, errors);
   }
+}
+
+function extractCustomPropertyReferences(value: string): string[] {
+  return [...value.matchAll(/var\((--[^,)]+)/g)].map((m) => m[1].trim());
 }

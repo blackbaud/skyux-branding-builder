@@ -8,6 +8,8 @@ import { getTransforms, register } from '@tokens-studio/sd-transforms';
 import { TokenConfig } from '../types/token-config.js';
 import { PublicApiTokens } from '../types/public-api-tokens.js';
 import { PublicApiClasses } from '../types/public-api-classes.js';
+import { GeneratedFile } from '../types/generated-file.js';
+import { SkyTokenOptions } from '../types/sky-token-options.js';
 import { fixAssetsUrlValue } from './shared/assets-utils.mjs';
 import {
   buildPublicApiGroups,
@@ -21,29 +23,27 @@ import {
 } from './shared/public-api-classes-utils.mjs';
 import {
   addAssetsCss,
-  GeneratedFile,
   getBaseDictionaryConfig,
   getMediaQueryMinWidth,
   getPublicDictionaryConfig,
   getReferenceDictionaryConfig,
   isUrlToken,
-  SkyTokenOptions,
 } from './shared/style-dictionary-config.mjs';
 
 async function generateDictionaryFiles(
   tokenConfig: TokenConfig,
   skyOptions: SkyTokenOptions,
-): Promise<{ tokenFiles: GeneratedFile[]; publicApiFiles: GeneratedFile[]; publicApiJsonFiles: GeneratedFile[]; publicClassFiles: GeneratedFile[]; publicClassJsonFiles: GeneratedFile[] }> {
+): Promise<{ tokenFiles: GeneratedFile[]; publicTokenCssFiles: GeneratedFile[]; publicTokenJsonFiles: GeneratedFile[]; publicClassFiles: GeneratedFile[]; publicClassJsonFiles: GeneratedFile[] }> {
   const sd = new StyleDictionary(undefined);
   const rootPath = tokenConfig.rootPath || 'src/tokens/';
 
   const results = await Promise.all(
     tokenConfig.tokenSets.map(async (tokenSet) => {
-      const setTokenFiles: GeneratedFile[] = [];
-      const setPublicApiFiles: GeneratedFile[] = [];
-      const setPublicApiJsonFiles: GeneratedFile[] = [];
-      const setPublicClassFiles: GeneratedFile[] = [];
-      const setPublicClassJsonFiles: GeneratedFile[] = [];
+      const tokenFiles: GeneratedFile[] = [];
+      const publicTokenCssFiles: GeneratedFile[] = [];
+      const publicTokenJsonFiles: GeneratedFile[] = [];
+      const publicClassFiles: GeneratedFile[] = [];
+      const publicClassJsonFiles: GeneratedFile[] = [];
 
       const tokenDictionary = await sd.extend(
         getBaseDictionaryConfig(rootPath, tokenSet, {
@@ -52,10 +52,10 @@ async function generateDictionaryFiles(
         }),
       );
 
-      const baseFiles: GeneratedFile[] = await tokenDictionary.formatPlatform('css');
-      setTokenFiles.push(...baseFiles);
+      const sourceCssFiles: GeneratedFile[] = await tokenDictionary.formatPlatform('css');
+      tokenFiles.push(...sourceCssFiles);
 
-      const refResults = await Promise.all(
+      const referenceTokenResults = await Promise.all(
         tokenSet.referenceTokens.map(async (referenceTokenSet) => {
           const referenceTokenDictionary = await sd.extend(
             getReferenceDictionaryConfig(
@@ -81,7 +81,7 @@ async function generateDictionaryFiles(
           return files;
         }),
       );
-      setTokenFiles.push(...refResults.flat());
+      tokenFiles.push(...referenceTokenResults.flat());
 
       if (tokenSet.publicTokens?.length) {
         const publicResults = await Promise.all(
@@ -99,14 +99,14 @@ async function generateDictionaryFiles(
             return { cssFiles, jsonFiles };
           }),
         );
-        setPublicApiFiles.push(...publicResults.flatMap((r) => r.cssFiles));
-        setPublicApiJsonFiles.push(...publicResults.flatMap((r) => r.jsonFiles));
+        publicTokenCssFiles.push(...publicResults.flatMap((r) => r.cssFiles));
+        publicTokenJsonFiles.push(...publicResults.flatMap((r) => r.jsonFiles));
       }
 
       if (tokenSet.publicClasses?.length) {
         // Build the set of known CSS custom properties from this token set's public tokens.
         const knownCssProperties = new Set<string>();
-        for (const file of setPublicApiJsonFiles) {
+        for (const file of publicTokenJsonFiles) {
           const parsed = JSON.parse(file.output as string) as PublicApiTokens;
           collectPublicTokenCssProperties(parsed, knownCssProperties);
         }
@@ -131,17 +131,17 @@ async function generateDictionaryFiles(
             };
           }),
         );
-        setPublicClassFiles.push(...classResults.map((r) => r.css));
-        setPublicClassJsonFiles.push(...classResults.map((r) => r.json));
+        publicClassFiles.push(...classResults.map((r) => r.css));
+        publicClassJsonFiles.push(...classResults.map((r) => r.json));
       }
 
-      return { setTokenFiles, setPublicApiFiles, setPublicApiJsonFiles, setPublicClassFiles, setPublicClassJsonFiles };
+      return { setTokenFiles: tokenFiles, setPublicTokenCssFiles: publicTokenCssFiles, setPublicTokenJsonFiles: publicTokenJsonFiles, setPublicClassFiles: publicClassFiles, setPublicClassJsonFiles: publicClassJsonFiles };
     }),
   );
 
   const tokenFiles = results.flatMap((r) => r.setTokenFiles);
-  const publicApiFiles = results.flatMap((r) => r.setPublicApiFiles);
-  const publicApiJsonFiles = results.flatMap((r) => r.setPublicApiJsonFiles);
+  const publicTokenCssFiles = results.flatMap((r) => r.setPublicTokenCssFiles);
+  const publicTokenJsonFiles = results.flatMap((r) => r.setPublicTokenJsonFiles);
   const publicClassFiles = results.flatMap((r) => r.setPublicClassFiles);
   const publicClassJsonFiles = results.flatMap((r) => r.setPublicClassJsonFiles);
 
@@ -154,7 +154,7 @@ async function generateDictionaryFiles(
     return aIndex - bIndex;
   });
 
-  return { tokenFiles, publicApiFiles, publicApiJsonFiles, publicClassFiles, publicClassJsonFiles };
+  return { tokenFiles, publicTokenCssFiles, publicTokenJsonFiles, publicClassFiles, publicClassJsonFiles };
 }
 
 export function buildStyleDictionaryPlugin(tokenConfig: TokenConfig): Plugin {
@@ -273,14 +273,14 @@ ${variables}
       if (id.includes('src/dev/tokens.css')) {
         const assetsBasePath = '/assets/';
 
-        const { tokenFiles, publicApiFiles } = await generateDictionaryFiles(
+        const { tokenFiles, publicTokenCssFiles } = await generateDictionaryFiles(
           tokenConfig,
           {
             assetsBasePath,
             selectorPrefix: '.local-dev-tokens',
           },
         );
-        const allFiles = tokenFiles.concat(publicApiFiles);
+        const allFiles = tokenFiles.concat(publicTokenCssFiles);
 
         let localTokens = allFiles.reduce((acc, file) => acc + file.output, '');
 
@@ -298,7 +298,7 @@ ${variables}
     async generateBundle(): Promise<void> {
       const assetsBasePath = '../';
 
-      const { tokenFiles, publicApiFiles, publicApiJsonFiles, publicClassFiles, publicClassJsonFiles } =
+      const { tokenFiles, publicTokenCssFiles, publicTokenJsonFiles, publicClassFiles, publicClassJsonFiles } =
         await generateDictionaryFiles(tokenConfig, {
           assetsBasePath,
           selectorPrefix: '',
@@ -324,7 +324,7 @@ ${variables}
         }
       }
 
-      for (const file of publicApiFiles) {
+      for (const file of publicTokenCssFiles) {
         let fileContents = compositeFiles[publicApiFileName] || '';
         fileContents = fileContents.concat((file.output as string) ?? '');
 
@@ -353,7 +353,7 @@ ${variables}
       }
 
       const publicApiJsonData: PublicApiTokens = {};
-      for (const file of publicApiJsonFiles) {
+      for (const file of publicTokenJsonFiles) {
         const parsed = JSON.parse(file.output as string) as PublicApiTokens;
         mergePublicApiResults(publicApiJsonData, parsed);
       }

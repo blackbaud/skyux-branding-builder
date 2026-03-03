@@ -2,7 +2,6 @@ import path from 'path';
 import { Token } from 'style-dictionary';
 
 import { Breakpoint } from '../../types/breakpoint.js';
-import { GeneratedFile } from '../../types/generated-file.js';
 import { PublicTokenSet } from '../../types/public-token-set.js';
 import { ReferenceTokenSet } from '../../types/reference-token-set.js';
 import { SkyStyleDictionaryConfig } from '../../types/sky-style-dictionary-config.js';
@@ -11,9 +10,7 @@ import { TokenConfig } from '../../types/token-config.js';
 import { TokenSet } from '../../types/token-set.js';
 import { generateAssetsCss } from './assets-utils.mjs';
 
-export type { GeneratedFile, SkyStyleDictionaryConfig, SkyTokenOptions };
-
-export const DEFAULT_SD_CONFIG: SkyStyleDictionaryConfig = {
+const DEFAULT_SD_CONFIG: SkyStyleDictionaryConfig = {
   preprocessors: ['tokens-studio'],
   platforms: {
     css: {
