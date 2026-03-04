@@ -1,3 +1,6 @@
+# 1.1.0 (2026-03-04)
+- Add support for public API custom properties and classes. [#5](https://github.com/blackbaud/skyux-branding-builder/pull/5)
+
 # 1.0.0 (2025-08-22)
 - Release 1.0.0 version of @blackbaud/skyux-branding-builder
 

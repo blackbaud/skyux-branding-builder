@@ -1,0 +1,35 @@
+{
+  "theme": {
+    "color": {
+      "$description": "All color tokens.",
+      "$extensions": { "com.blackbaud.developer.docs": { "groupName": "Colors" } },
+      "text": {
+        "$description": "Text color tokens.",
+        "$extensions": { "com.blackbaud.developer.docs": { "groupName": "Text Colors" } },
+        "default": {
+          "$type": "color",
+          "$value": "{color.text.default}",
+          "$description": "The default text color.",
+          "$extensions": {
+            "com.blackbaud.developer.docs": {
+              "name": "Default Text",
+              "deprecatedCustomProperty": "--old-text-color"
+            }
+          }
+        }
+      },
+      "background": {
+        "$description": "Background color tokens.",
+        "$extensions": { "com.blackbaud.developer.docs": { "groupName": "Background Colors" } },
+        "danger": {
+          "$type": "color",
+          "$value": "{color.background.danger}",
+          "$description": "The background color for danger elements.",
+          "$extensions": {
+            "com.blackbaud.developer.docs": { "name": "Danger Background" }
+          }
+        }
+      }
+    }
+  }
+}

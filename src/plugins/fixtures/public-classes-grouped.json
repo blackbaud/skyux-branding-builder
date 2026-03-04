@@ -1,0 +1,25 @@
+{
+  "groups": [
+    {
+      "name": "Margin top",
+      "description": "Use these classes to add a top margin to an element.",
+      "classes": [
+        {
+          "name": "Top x-small",
+          "className": "sky-theme-margin-top-xs",
+          "description": "Top x-small margin.",
+          "properties": {
+            "margin-top": "0.5rem"
+          }
+        },
+        {
+          "name": "Top small",
+          "className": "sky-theme-margin-top-s",
+          "properties": {
+            "margin-top": "1rem"
+          }
+        }
+      ]
+    }
+  ]
+}

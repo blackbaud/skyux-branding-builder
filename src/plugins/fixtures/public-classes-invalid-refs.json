@@ -1,0 +1,11 @@
+{
+  "classes": [
+    {
+      "name": "Bad Class",
+      "className": "sky-theme-bad-class",
+      "properties": {
+        "color": "var(--sky-theme-nonexistent-token)"
+      }
+    }
+  ]
+}
