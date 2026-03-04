@@ -748,18 +748,11 @@ describe('buildStyleDictionaryPlugin', () => {
     ];
 
     const expectedEmittedPublicApiFile = {
-      source: `.sky-theme-rainbow {
-  /* Margin top */
-  /* Use these classes to add a top margin to an element. */
-  /* Top x-small margin. */
-  .sky-theme-margin-top-xs {
-    margin-top: 0.5rem;
-  }
-
-  .sky-theme-margin-top-s {
-    margin-top: 1rem;
-  }
-
+      source: `.sky-theme-rainbow .sky-theme-margin-top-xs {
+  margin-top: 0.5rem;
+}
+.sky-theme-rainbow .sky-theme-margin-top-s {
+  margin-top: 1rem;
 }
 `,
     };
@@ -847,19 +840,11 @@ describe('buildStyleDictionaryPlugin', () => {
     ];
 
     const expectedEmittedPublicApiFile = {
-      source: `.sky-theme-rainbow {
-  /* An ungrouped class. */
-  .sky-theme-ungrouped {
-    display: block;
-  }
-
-  /* Colors */
-  /* Text Colors */
-  /* Text color classes. */
-  .sky-theme-text-default {
-    color: black;
-  }
-
+      source: `.sky-theme-rainbow .sky-theme-ungrouped {
+  display: block;
+}
+.sky-theme-rainbow .sky-theme-text-default {
+  color: black;
 }
 `,
     };
@@ -1005,12 +990,8 @@ describe('buildStyleDictionaryPlugin', () => {
   /* The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
-.sky-theme-rainbow {
-  /* Applies the default text color. */
-  .sky-theme-text-default {
-    color: var(--sky-theme-color-text-default);
-  }
-
+.sky-theme-rainbow .sky-theme-text-default {
+  color: var(--sky-theme-color-text-default);
 }
 `,
     };
@@ -1133,31 +1114,17 @@ describe('buildStyleDictionaryPlugin', () => {
 
     // Both class sets emit their own CSS block into bundles/public-api.css; dedup only applies to the JSON.
     const expectedEmittedPublicApiFile = {
-      source: `.sky-theme-rainbow {
-  /* Margin top */
-  /* Use these classes to add a top margin to an element. */
-  /* Top x-small margin. */
-  .sky-theme-margin-top-xs {
-    margin-top: 0.5rem;
-  }
-
-  .sky-theme-margin-top-s {
-    margin-top: 1rem;
-  }
-
+      source: `.sky-theme-rainbow .sky-theme-margin-top-xs {
+  margin-top: 0.5rem;
 }
-.sky-theme-rainbow {
-  /* Margin top */
-  /* Use these classes to add a top margin to an element. */
-  /* Top x-small margin. */
-  .sky-theme-margin-top-xs {
-    margin-top: 0.5rem;
-  }
-
-  .sky-theme-margin-top-l {
-    margin-top: 2rem;
-  }
-
+.sky-theme-rainbow .sky-theme-margin-top-s {
+  margin-top: 1rem;
+}
+.sky-theme-rainbow .sky-theme-margin-top-xs {
+  margin-top: 0.5rem;
+}
+.sky-theme-rainbow .sky-theme-margin-top-l {
+  margin-top: 2rem;
 }
 `,
     };

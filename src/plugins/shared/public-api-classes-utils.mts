@@ -6,22 +6,17 @@ export function generatePublicClassesCss(
   publicApiClasses: PublicApiClasses,
   selector: string,
 ): string {
+  const classes = collectAllClasses(publicApiClasses);
   const lines: string[] = [];
-  const indent = '  ';
 
-  lines.push(`${selector} {`);
-
-  for (const cls of publicApiClasses.classes ?? []) {
-    lines.push(generatePublicClassCss(cls, indent));
-  }
-
-  if (publicApiClasses.groups) {
-    for (const group of publicApiClasses.groups) {
-      lines.push(generatePublicClassGroupCss(group, indent));
+  for (const cls of classes) {
+    lines.push(`${selector} .${cls.className} {`);
+    for (const [prop, value] of Object.entries(cls.properties)) {
+      lines.push(`  ${prop}: ${value};`);
     }
+    lines.push('}');
   }
 
-  lines.push('}');
   lines.push('');
 
   return lines.join('\n');
@@ -66,47 +61,29 @@ export function mergePublicApiClassesResults(
   }
 }
 
-function generatePublicClassCss(
-  cls: PublicApiClass,
-  indent: string,
-): string {
-  const lines: string[] = [];
+function collectAllClasses(publicApiClasses: PublicApiClasses): PublicApiClass[] {
+  const result: PublicApiClass[] = [];
 
-  if (cls.description) {
-    lines.push(`${indent}/* ${cls.description} */`);
+  for (const cls of publicApiClasses.classes ?? []) {
+    result.push(cls);
   }
-  lines.push(`${indent}.${cls.className} {`);
-  if (cls.properties) {
-    for (const [prop, value] of Object.entries(cls.properties)) {
-      lines.push(`${indent}  ${prop}: ${value};`);
-    }
+  for (const group of publicApiClasses.groups ?? []) {
+    collectGroupClasses(group, result);
   }
-  lines.push(`${indent}}`);
-  lines.push('');
 
-  return lines.join('\n');
+  return result;
 }
 
-function generatePublicClassGroupCss(
+function collectGroupClasses(
   group: PublicApiClassGroup,
-  indent: string,
-): string {
-  const lines: string[] = [];
-
-  lines.push(`${indent}/* ${group.name} */`);
-  if (group.description) {
-    lines.push(`${indent}/* ${group.description} */`);
-  }
-
+  result: PublicApiClass[],
+): void {
   for (const cls of group.classes ?? []) {
-    lines.push(generatePublicClassCss(cls, indent));
+    result.push(cls);
   }
-
   for (const subgroup of group.groups ?? []) {
-    lines.push(generatePublicClassGroupCss(subgroup, indent));
+    collectGroupClasses(subgroup, result);
   }
-
-  return lines.join('\n');
 }
 
 function mergePublicApiClassGroupArrays(

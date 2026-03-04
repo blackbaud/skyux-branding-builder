@@ -20,7 +20,7 @@ function makeClass(
 }
 
 describe('generatePublicClassesCss', () => {
-  it('should generate CSS for top-level classes', () => {
+  it('should generate flat CSS for top-level classes', () => {
     const input: PublicApiClasses = {
       classes: [
         makeClass({
@@ -32,17 +32,14 @@ describe('generatePublicClassesCss', () => {
 
     const css = generatePublicClassesCss(input, '.sky-theme');
     expect(css).toBe(
-      `.sky-theme {
-  .sky-theme-margin-top-xs {
-    margin-top: 0.5rem;
-  }
-
+      `.sky-theme .sky-theme-margin-top-xs {
+  margin-top: 0.5rem;
 }
 `,
     );
   });
 
-  it('should include a description comment when present', () => {
+  it('should not include description comments', () => {
     const input: PublicApiClasses = {
       classes: [
         makeClass({
@@ -54,11 +51,11 @@ describe('generatePublicClassesCss', () => {
     };
 
     const css = generatePublicClassesCss(input, '.sky-theme');
-    expect(css).toContain('/* A helpful class. */');
-    expect(css).toContain('.sky-theme-foo {');
+    expect(css).not.toContain('/*');
+    expect(css).toContain('.sky-theme .sky-theme-foo {');
   });
 
-  it('should generate CSS for grouped classes', () => {
+  it('should generate flat CSS for grouped classes', () => {
     const input: PublicApiClasses = {
       groups: [
         {
@@ -75,12 +72,12 @@ describe('generatePublicClassesCss', () => {
     };
 
     const css = generatePublicClassesCss(input, '.sky-theme');
-    expect(css).toContain('/* Margin top */');
-    expect(css).toContain('/* Top margins. */');
-    expect(css).toContain('.sky-theme-margin-top-xs {');
+    expect(css).not.toContain('Margin top');
+    expect(css).not.toContain('Top margins');
+    expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
   });
 
-  it('should handle nested subgroups', () => {
+  it('should flatten nested subgroups', () => {
     const input: PublicApiClasses = {
       groups: [
         {
@@ -101,19 +98,16 @@ describe('generatePublicClassesCss', () => {
     };
 
     const css = generatePublicClassesCss(input, '.sky-theme');
-    expect(css).toContain('/* Colors */');
-    expect(css).toContain('/* Text Colors */');
-    expect(css).toContain('.sky-theme-text-default {');
+    expect(css).not.toContain('/*');
+    expect(css).toContain('.sky-theme .sky-theme-text-default {');
   });
 
   it('should handle empty input', () => {
     const css = generatePublicClassesCss({}, '.sky-theme');
-    expect(css).toBe(`.sky-theme {
-}
-`);
+    expect(css).toBe('');
   });
 
-  it('should render both top-level classes and groups', () => {
+  it('should render both top-level classes and group classes', () => {
     const input: PublicApiClasses = {
       classes: [
         makeClass({
@@ -135,9 +129,35 @@ describe('generatePublicClassesCss', () => {
     };
 
     const css = generatePublicClassesCss(input, '.sky-theme');
-    expect(css).toContain('.sky-theme-ungrouped {');
-    expect(css).toContain('/* Colors */');
-    expect(css).toContain('.sky-theme-text-default {');
+    expect(css).toContain('.sky-theme .sky-theme-ungrouped {');
+    expect(css).toContain('.sky-theme .sky-theme-text-default {');
+    expect(css).not.toContain('/*');
+  });
+
+  it('should generate multiple class blocks with the parent selector', () => {
+    const input: PublicApiClasses = {
+      classes: [
+        makeClass({
+          className: 'sky-theme-a',
+          properties: { display: 'block' },
+        }),
+        makeClass({
+          className: 'sky-theme-b',
+          properties: { display: 'flex' },
+        }),
+      ],
+    };
+
+    const css = generatePublicClassesCss(input, '.sky-theme');
+    expect(css).toBe(
+      `.sky-theme .sky-theme-a {
+  display: block;
+}
+.sky-theme .sky-theme-b {
+  display: flex;
+}
+`,
+    );
   });
 });
 
