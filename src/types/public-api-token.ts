@@ -1,6 +1,6 @@
 export interface PublicApiToken {
   name: string;
-  cssProperty: string;
+  customProperty: string;
   description?: string;
-  deprecated?: string;
+  deprecatedCustomProperty?: string;
 }

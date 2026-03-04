@@ -1,9 +1,9 @@
 {
   "theme": {
     "color": {
-      "$extensions": { "groupName": "Colors" },
+      "$extensions": { "com.blackbaud.developer.docs": { "groupName": "Colors" } },
       "text": {
-        "$extensions": { "groupName": "Text Colors" },
+        "$extensions": { "com.blackbaud.developer.docs": { "groupName": "Text Colors" } },
         "minimal": {
           "$type": "color",
           "$value": "{color.text.default}"

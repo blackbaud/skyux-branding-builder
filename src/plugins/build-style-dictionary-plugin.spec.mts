@@ -236,9 +236,9 @@ describe('buildStyleDictionaryPlugin', () => {
                   tokens: [
                     {
                       name: 'Default Text',
-                      cssProperty: '--sky-theme-color-text-default',
+                      customProperty: '--sky-theme-color-text-default',
                       description: 'The default text color.',
-                      deprecated: '--old-text-color',
+                      deprecatedCustomProperty: '--old-text-color',
                     },
                   ],
                 },
@@ -248,7 +248,7 @@ describe('buildStyleDictionaryPlugin', () => {
                   tokens: [
                     {
                       name: 'Danger Background',
-                      cssProperty: '--sky-theme-color-background-danger',
+                      customProperty: '--sky-theme-color-background-danger',
                       description:
                         'The background color for danger elements.',
                     },
@@ -330,7 +330,7 @@ describe('buildStyleDictionaryPlugin', () => {
           tokens: [
             {
               name: 'Small Spacing',
-              cssProperty: '--sky-theme-spacing-small',
+              customProperty: '--sky-theme-spacing-small',
               description: 'Small spacing value.',
             },
           ],
@@ -343,7 +343,7 @@ describe('buildStyleDictionaryPlugin', () => {
                   tokens: [
                     {
                       name: 'Default Text',
-                      cssProperty: '--sky-theme-color-text-default',
+                      customProperty: '--sky-theme-color-text-default',
                       description: 'The default text color.',
                     },
                   ],
@@ -427,7 +427,7 @@ describe('buildStyleDictionaryPlugin', () => {
                   tokens: [
                     {
                       name: 'sky-theme-color-text-minimal',
-                      cssProperty: '--sky-theme-color-text-minimal',
+                      customProperty: '--sky-theme-color-text-minimal',
                     },
                   ],
                 },
@@ -525,9 +525,9 @@ describe('buildStyleDictionaryPlugin', () => {
                   tokens: [
                     {
                       name: 'Default Text',
-                      cssProperty: '--sky-theme-color-text-default',
+                      customProperty: '--sky-theme-color-text-default',
                       description: 'The default text color.',
-                      deprecated: '--old-text-color',
+                      deprecatedCustomProperty: '--old-text-color',
                     },
                   ],
                 },
@@ -537,7 +537,7 @@ describe('buildStyleDictionaryPlugin', () => {
                   tokens: [
                     {
                       name: 'Danger Background',
-                      cssProperty: '--sky-theme-color-background-danger',
+                      customProperty: '--sky-theme-color-background-danger',
                       description: 'The background color for danger elements.',
                     },
                   ],
@@ -769,19 +769,19 @@ describe('buildStyleDictionaryPlugin', () => {
         {
           groups: [
             {
-              groupName: 'Margin top',
+              name: 'Margin top',
               description: 'Use these classes to add a top margin to an element.',
               classes: [
                 {
                   name: 'Top x-small',
-                  cssClass: 'sky-theme-margin-top-xs',
+                  className: 'sky-theme-margin-top-xs',
                   description: 'Top x-small margin.',
-                  cssProperties: { 'margin-top': '0.5rem' },
+                  properties: { 'margin-top': '0.5rem' },
                 },
                 {
                   name: 'Top small',
-                  cssClass: 'sky-theme-margin-top-s',
-                  cssProperties: { 'margin-top': '1rem' },
+                  className: 'sky-theme-margin-top-s',
+                  properties: { 'margin-top': '1rem' },
                 },
               ],
             },
@@ -870,23 +870,23 @@ describe('buildStyleDictionaryPlugin', () => {
           classes: [
             {
               name: 'Ungrouped',
-              cssClass: 'sky-theme-ungrouped',
+              className: 'sky-theme-ungrouped',
               description: 'An ungrouped class.',
-              cssProperties: { display: 'block' },
+              properties: { display: 'block' },
             },
           ],
           groups: [
             {
-              groupName: 'Colors',
+              name: 'Colors',
               groups: [
                 {
-                  groupName: 'Text Colors',
+                  name: 'Text Colors',
                   description: 'Text color classes.',
                   classes: [
                     {
                       name: 'Default Text',
-                      cssClass: 'sky-theme-text-default',
-                      cssProperties: { color: 'black' },
+                      className: 'sky-theme-text-default',
+                      properties: { color: 'black' },
                     },
                   ],
                 },
@@ -909,7 +909,7 @@ describe('buildStyleDictionaryPlugin', () => {
     );
   });
 
-  it('should throw when a class cssProperty references a custom property not defined in publicTokens', async () => {
+  it('should throw when a class customProperty references a custom property not defined in publicTokens', async () => {
     const tokenConfig: TokenConfig = {
       rootPath: 'src/plugins/fixtures/',
       projectName: 'skyux-brand-test',
@@ -1029,9 +1029,9 @@ describe('buildStyleDictionaryPlugin', () => {
                   tokens: [
                     {
                       name: 'Default Text',
-                      cssProperty: '--sky-theme-color-text-default',
+                      customProperty: '--sky-theme-color-text-default',
                       description: 'The default text color.',
-                      deprecated: '--old-text-color',
+                      deprecatedCustomProperty: '--old-text-color',
                     },
                   ],
                 },
@@ -1041,7 +1041,7 @@ describe('buildStyleDictionaryPlugin', () => {
                   tokens: [
                     {
                       name: 'Danger Background',
-                      cssProperty: '--sky-theme-color-background-danger',
+                      customProperty: '--sky-theme-color-background-danger',
                       description: 'The background color for danger elements.',
                     },
                   ],
@@ -1061,9 +1061,9 @@ describe('buildStyleDictionaryPlugin', () => {
           classes: [
             {
               name: 'Default Text Color',
-              cssClass: 'sky-theme-text-default',
+              className: 'sky-theme-text-default',
               description: 'Applies the default text color.',
-              cssProperties: { color: 'var(--sky-theme-color-text-default)' },
+              properties: { color: 'var(--sky-theme-color-text-default)' },
             },
           ],
         },
@@ -1169,24 +1169,24 @@ describe('buildStyleDictionaryPlugin', () => {
         {
           groups: [
             {
-              groupName: 'Margin top',
+              name: 'Margin top',
               description: 'Use these classes to add a top margin to an element.',
               classes: [
                 {
                   name: 'Top x-small',
-                  cssClass: 'sky-theme-margin-top-xs',
+                  className: 'sky-theme-margin-top-xs',
                   description: 'Top x-small margin.',
-                  cssProperties: { 'margin-top': '0.5rem' },
+                  properties: { 'margin-top': '0.5rem' },
                 },
                 {
                   name: 'Top small',
-                  cssClass: 'sky-theme-margin-top-s',
-                  cssProperties: { 'margin-top': '1rem' },
+                  className: 'sky-theme-margin-top-s',
+                  properties: { 'margin-top': '1rem' },
                 },
                 {
                   name: 'Top large',
-                  cssClass: 'sky-theme-margin-top-l',
-                  cssProperties: { 'margin-top': '2rem' },
+                  className: 'sky-theme-margin-top-l',
+                  properties: { 'margin-top': '2rem' },
                 },
               ],
             },

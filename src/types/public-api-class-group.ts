@@ -1,9 +1,9 @@
 import { PublicApiClass } from './public-api-class.js';
 
 export interface PublicApiClassGroup {
-  groupName: string;
+  name: string;
   description?: string;
   groups?: PublicApiClassGroup[];
   classes?: PublicApiClass[];
-  groupImageToken?: string;
+  imageToken?: string;
 }

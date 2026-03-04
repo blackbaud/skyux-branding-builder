@@ -2,9 +2,9 @@
   "classes": [
     {
       "name": "Default Text Color",
-      "cssClass": "sky-theme-text-default",
+      "className": "sky-theme-text-default",
       "description": "Applies the default text color.",
-      "cssProperties": {
+      "properties": {
         "color": "var(--sky-theme-color-text-default)"
       }
     }

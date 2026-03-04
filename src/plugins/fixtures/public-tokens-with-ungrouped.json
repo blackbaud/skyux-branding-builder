@@ -1,15 +1,15 @@
 {
   "theme": {
     "color": {
-      "$extensions": { "groupName": "Colors" },
+      "$extensions": { "com.blackbaud.developer.docs": { "groupName": "Colors" } },
       "text": {
-        "$extensions": { "groupName": "Text Colors" },
+        "$extensions": { "com.blackbaud.developer.docs": { "groupName": "Text Colors" } },
         "default": {
           "$type": "color",
           "$value": "{color.text.default}",
           "$description": "The default text color.",
           "$extensions": {
-            "readableName": "Default Text"
+            "com.blackbaud.developer.docs": { "name": "Default Text" }
           }
         }
       }
@@ -20,7 +20,7 @@
         "$value": "{rainbow.space.s}",
         "$description": "Small spacing value.",
         "$extensions": {
-          "readableName": "Small Spacing"
+          "com.blackbaud.developer.docs": { "name": "Small Spacing" }
         }
       }
     }

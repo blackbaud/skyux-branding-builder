@@ -2,8 +2,8 @@
   "classes": [
     {
       "name": "Bad Class",
-      "cssClass": "sky-theme-bad-class",
-      "cssProperties": {
+      "className": "sky-theme-bad-class",
+      "properties": {
         "color": "var(--sky-theme-nonexistent-token)"
       }
     }

@@ -1,7 +1,7 @@
 export interface PublicApiClass {
   name: string;
-  cssClass: string;
-  cssProperties: Record<string, string>;
+  className: string;
+  properties: Record<string, string>;
   description?: string;
-  deprecated?: string;
+  deprecatedClassName?: string;
 }

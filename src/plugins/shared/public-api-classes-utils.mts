@@ -35,7 +35,7 @@ export function validatePublicClassesCssProperties(
   const errors: string[] = [];
 
   for (const cls of publicApiClasses.classes ?? []) {
-    checkClassCssProperties(cls.cssClass, cls.cssProperties, knownCssProperties, errors);
+    checkClassCssProperties(cls.className, cls.properties, knownCssProperties, errors);
   }
   for (const group of publicApiClasses.groups ?? []) {
     walkGroupCssProperties(group, knownCssProperties, errors);
@@ -55,7 +55,7 @@ export function mergePublicApiClassesResults(
   if (source.classes) {
     target.classes ??= [];
     for (const cls of source.classes) {
-      if (!target.classes.some((c) => c.cssClass === cls.cssClass)) {
+      if (!target.classes.some((c) => c.className === cls.className)) {
         target.classes.push(cls);
       }
     }
@@ -75,9 +75,9 @@ function generatePublicClassCss(
   if (cls.description) {
     lines.push(`${indent}/* ${cls.description} */`);
   }
-  lines.push(`${indent}.${cls.cssClass} {`);
-  if (cls.cssProperties) {
-    for (const [prop, value] of Object.entries(cls.cssProperties)) {
+  lines.push(`${indent}.${cls.className} {`);
+  if (cls.properties) {
+    for (const [prop, value] of Object.entries(cls.properties)) {
       lines.push(`${indent}  ${prop}: ${value};`);
     }
   }
@@ -93,7 +93,7 @@ function generatePublicClassGroupCss(
 ): string {
   const lines: string[] = [];
 
-  lines.push(`${indent}/* ${group.groupName} */`);
+  lines.push(`${indent}/* ${group.name} */`);
   if (group.description) {
     lines.push(`${indent}/* ${group.description} */`);
   }
@@ -114,7 +114,7 @@ function mergePublicApiClassGroupArrays(
   source: PublicApiClassGroup[],
 ): void {
   for (const srcGroup of source) {
-    const existing = target.find((g) => g.groupName === srcGroup.groupName);
+    const existing = target.find((g) => g.name === srcGroup.name);
     if (existing) {
       if (srcGroup.description && !existing.description) {
         existing.description = srcGroup.description;
@@ -122,7 +122,7 @@ function mergePublicApiClassGroupArrays(
       if (srcGroup.classes) {
         existing.classes ??= [];
         for (const cls of srcGroup.classes) {
-          if (!existing.classes.some((c: PublicApiClass) => c.cssClass === cls.cssClass)) {
+          if (!existing.classes.some((c: PublicApiClass) => c.className === cls.className)) {
             existing.classes.push(cls);
           }
         }
@@ -138,16 +138,16 @@ function mergePublicApiClassGroupArrays(
 }
 
 function checkClassCssProperties(
-  cssClass: string,
-  cssProperties: Record<string, string> | undefined,
+  className: string,
+  properties: Record<string, string> | undefined,
   knownCssProperties: Set<string>,
   errors: string[],
 ): void {
-  if (!cssProperties) return;
-  for (const value of Object.values(cssProperties)) {
+  if (!properties) return;
+  for (const value of Object.values(properties)) {
     for (const ref of extractCustomPropertyReferences(value)) {
       if (!knownCssProperties.has(ref)) {
-        errors.push(`  .${cssClass}: "${ref}" is not defined in publicTokens`);
+        errors.push(`  .${className}: "${ref}" is not defined in publicTokens`);
       }
     }
   }
@@ -159,7 +159,7 @@ function walkGroupCssProperties(
   errors: string[],
 ): void {
   for (const cls of group.classes ?? []) {
-    checkClassCssProperties(cls.cssClass, cls.cssProperties, knownCssProperties, errors);
+    checkClassCssProperties(cls.className, cls.properties, knownCssProperties, errors);
   }
   for (const subgroup of group.groups ?? []) {
     walkGroupCssProperties(subgroup, knownCssProperties, errors);
