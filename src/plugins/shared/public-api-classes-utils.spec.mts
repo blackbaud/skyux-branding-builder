@@ -149,6 +149,41 @@ describe('generatePublicClassesCss', () => {
     expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
   });
 
+  it('should skip htmlElement-only classes (no className or properties)', () => {
+    const input: PublicApiClasses = {
+      classes: [
+        makeClass({ name: 'Button', htmlElement: 'button' }),
+        makeClass({
+          className: 'sky-theme-margin-top-xs',
+          properties: { 'margin-top': '0.5rem' },
+        }),
+      ],
+    };
+
+    const css = generatePublicClassesCss(input, '.sky-theme');
+
+    expect(css).not.toContain('button');
+    expect(css).not.toContain('undefined');
+    expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
+  });
+
+  it('should generate CSS only for the className when both className and htmlElement are present', () => {
+    const input: PublicApiClasses = {
+      classes: [
+        makeClass({
+          className: 'sky-theme-text-default',
+          htmlElement: 'p',
+          properties: { color: 'black' },
+        }),
+      ],
+    };
+
+    const css = generatePublicClassesCss(input, '.sky-theme');
+
+    expect(css).toContain('.sky-theme .sky-theme-text-default {');
+    expect(css).not.toContain('.sky-theme p {');
+  });
+
   it('should render both top-level classes and group classes', () => {
     const input: PublicApiClasses = {
       classes: [
