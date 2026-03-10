@@ -128,7 +128,7 @@ function checkClassCssProperties(
     if (cls.properties) {
       const label = classLabel(cls);
       errors.push(
-        `  .${label}: has "properties" but no "className"; CSS cannot be generated for this entry`,
+        `  ${label}: has "properties" but no "className"; CSS cannot be generated for this entry`,
       );
     }
     return;

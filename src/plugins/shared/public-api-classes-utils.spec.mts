@@ -381,7 +381,7 @@ describe('validatePublicClassesCssProperties', () => {
 
     expect(() =>
       validatePublicClassesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow('.sky-old-class: has "properties" but no "className"');
+    ).toThrow('sky-old-class: has "properties" but no "className"');
   });
 
   it('should use htmlElement as the label when className and deprecatedClassName are absent', () => {
@@ -397,7 +397,7 @@ describe('validatePublicClassesCssProperties', () => {
 
     expect(() =>
       validatePublicClassesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow('.p: has "properties" but no "className"');
+    ).toThrow('p: has "properties" but no "className"');
   });
 
   it('should not throw for docs-only entries with no className and no properties', () => {
