@@ -33,7 +33,7 @@ export function validatePublicClassesCssProperties(
   const errors: string[] = [];
 
   for (const cls of publicApiClasses.classes ?? []) {
-    checkClassCssProperties(cls.className, cls.properties, knownCssProperties, errors);
+    checkClassCssProperties(cls, knownCssProperties, errors);
   }
   for (const group of publicApiClasses.groups ?? []) {
     walkGroupCssProperties(group, knownCssProperties, errors);
@@ -120,17 +120,25 @@ function mergePublicApiClassGroupArrays(
 }
 
 function checkClassCssProperties(
-  className: string | undefined,
-  properties: Record<string, string> | undefined,
+  cls: PublicApiClass,
   knownCssProperties: Set<string>,
   errors: string[],
 ): void {
-  if (!properties) return;
-  for (const value of Object.values(properties)) {
+  if (!cls.className) {
+    if (cls.properties) {
+      const label = stableClassKey(cls);
+      errors.push(
+        `  .${label}: has "properties" but no "className"; CSS cannot be generated for this entry`,
+      );
+    }
+    return;
+  }
+  if (!cls.properties) return;
+  for (const value of Object.values(cls.properties)) {
     for (const ref of extractCustomPropertyReferences(value)) {
       if (!knownCssProperties.has(ref)) {
         errors.push(
-          `  .${className ?? '(unnamed)'}: "${ref}" is not defined in publicTokens`,
+          `  .${cls.className}: "${ref}" is not defined in publicTokens`,
         );
       }
     }
@@ -143,7 +151,7 @@ function walkGroupCssProperties(
   errors: string[],
 ): void {
   for (const cls of group.classes ?? []) {
-    checkClassCssProperties(cls.className, cls.properties, knownCssProperties, errors);
+    checkClassCssProperties(cls, knownCssProperties, errors);
   }
   for (const subgroup of group.groups ?? []) {
     walkGroupCssProperties(subgroup, knownCssProperties, errors);

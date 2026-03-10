@@ -367,6 +367,73 @@ describe('validatePublicClassesCssProperties', () => {
       validatePublicClassesCssProperties(input, knownProps, 'test-set'),
     ).toThrow(/--missing-1[\s\S]*--missing-2/);
   });
+
+  it('should use deprecatedClassName as the label when className is absent', () => {
+    const input: PublicApiClasses = {
+      classes: [
+        makeClass({
+          name: 'Old Class',
+          deprecatedClassName: 'sky-old-class',
+          properties: { color: 'var(--unknown-prop)' },
+        }),
+      ],
+    };
+
+    expect(() =>
+      validatePublicClassesCssProperties(input, knownProps, 'test-set'),
+    ).toThrow('.sky-old-class: has "properties" but no "className"');
+  });
+
+  it('should use htmlElement as the label when className and deprecatedClassName are absent', () => {
+    const input: PublicApiClasses = {
+      classes: [
+        makeClass({
+          name: 'Paragraph',
+          htmlElement: 'p',
+          properties: { color: 'var(--unknown-prop)' },
+        }),
+      ],
+    };
+
+    expect(() =>
+      validatePublicClassesCssProperties(input, knownProps, 'test-set'),
+    ).toThrow('.p: has "properties" but no "className"');
+  });
+
+  it('should not throw for docs-only entries with no className and no properties', () => {
+    const input: PublicApiClasses = {
+      classes: [
+        makeClass({ name: 'Old Class', deprecatedClassName: 'sky-old-class' }),
+        makeClass({ name: 'Button', htmlElement: 'button' }),
+      ],
+    };
+
+    expect(() =>
+      validatePublicClassesCssProperties(input, knownProps, 'test-set'),
+    ).not.toThrow();
+  });
+
+  it('should not validate var() references for entries without a className', () => {
+    // Even if properties somehow exist, the error should be about missing className,
+    // not about unknown var() refs — ensuring the ref validator is not invoked.
+    const input: PublicApiClasses = {
+      classes: [
+        makeClass({
+          name: 'Old Class',
+          deprecatedClassName: 'sky-old-class',
+          properties: { color: 'var(--sky-theme-color-text-default)' },
+        }),
+      ],
+    };
+
+    expect(() =>
+      validatePublicClassesCssProperties(input, knownProps, 'test-set'),
+    ).toThrow('has "properties" but no "className"');
+
+    expect(() =>
+      validatePublicClassesCssProperties(input, knownProps, 'test-set'),
+    ).not.toThrow('is not defined in publicTokens');
+  });
 });
 
 describe('mergePublicApiClassesResults', () => {
