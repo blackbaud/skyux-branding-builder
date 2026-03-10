@@ -611,6 +611,22 @@ describe('mergePublicApiClassesResults', () => {
     expect(target.classes!.map((c) => c.htmlElement)).toEqual(['button', 'a']);
   });
 
+  it('should not deduplicate className entry and htmlElement entry sharing the same value', () => {
+    const target: PublicApiClasses = {
+      classes: [makeClass({ className: 'button', properties: { display: 'inline' } })],
+    };
+    const source: PublicApiClasses = {
+      classes: [makeClass({ name: 'Button element', htmlElement: 'button' })],
+    };
+
+    mergePublicApiClassesResults(target, source);
+
+    // 'button' as className and 'button' as htmlElement are different kinds — both survive.
+    expect(target.classes).toHaveLength(2);
+    expect(target.classes![0].className).toBe('button');
+    expect(target.classes![1].htmlElement).toBe('button');
+  });
+
   it('should merge nested subgroups recursively', () => {
     const target: PublicApiClasses = {
       groups: [

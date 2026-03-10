@@ -126,7 +126,7 @@ function checkClassCssProperties(
 ): void {
   if (!cls.className) {
     if (cls.properties) {
-      const label = stableClassKey(cls);
+      const label = classLabel(cls);
       errors.push(
         `  .${label}: has "properties" but no "className"; CSS cannot be generated for this entry`,
       );
@@ -163,5 +163,12 @@ function extractCustomPropertyReferences(value: string): string[] {
 }
 
 function stableClassKey(cls: PublicApiClass): string {
+  if (cls.className !== undefined) return `className:${cls.className}`;
+  if (cls.deprecatedClassName !== undefined) return `deprecatedClassName:${cls.deprecatedClassName}`;
+  if (cls.htmlElement !== undefined) return `htmlElement:${cls.htmlElement}`;
+  return `name:${cls.name}`;
+}
+
+function classLabel(cls: PublicApiClass): string {
   return cls.className ?? cls.deprecatedClassName ?? cls.htmlElement ?? cls.name;
 }
