@@ -94,7 +94,13 @@ export function mergePublicApiResults(
   if (source.tokens) {
     target.tokens ??= [];
     for (const token of source.tokens) {
-      if (!target.tokens.some((t) => t.customProperty === token.customProperty)) {
+      if (
+        !target.tokens.some((t) =>
+          token.customProperty !== undefined
+            ? t.customProperty === token.customProperty
+            : t.name === token.name,
+        )
+      ) {
         target.tokens.push(token);
       }
     }
@@ -111,7 +117,9 @@ export function collectPublicTokenCssProperties(
 ): Set<string> {
   if (api.tokens) {
     for (const token of api.tokens) {
-      result.add(token.customProperty);
+      if (token.customProperty) {
+        result.add(token.customProperty);
+      }
     }
   }
   if (api.groups) {
@@ -142,7 +150,11 @@ function mergePublicApiGroupArrays(
         existing.tokens ??= [];
         for (const token of srcGroup.tokens) {
           if (
-            !existing.tokens.some((t) => t.customProperty === token.customProperty)
+            !existing.tokens.some((t) =>
+              token.customProperty !== undefined
+                ? t.customProperty === token.customProperty
+                : t.name === token.name,
+            )
           ) {
             existing.tokens.push(token);
           }
@@ -164,7 +176,9 @@ function collectGroupCssProperties(
 ): void {
   if (group.tokens) {
     for (const token of group.tokens) {
-      result.add(token.customProperty);
+      if (token.customProperty) {
+        result.add(token.customProperty);
+      }
     }
   }
   if (group.groups) {

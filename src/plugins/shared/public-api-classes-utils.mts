@@ -10,6 +10,9 @@ export function generatePublicClassesCss(
   const lines: string[] = [];
 
   for (const cls of classes) {
+    if (!cls.className || !cls.properties) {
+      continue;
+    }
     lines.push(`${selector} .${cls.className} {`);
     for (const [prop, value] of Object.entries(cls.properties)) {
       lines.push(`  ${prop}: ${value};`);
@@ -50,7 +53,13 @@ export function mergePublicApiClassesResults(
   if (source.classes) {
     target.classes ??= [];
     for (const cls of source.classes) {
-      if (!target.classes.some((c) => c.className === cls.className)) {
+      if (
+        !target.classes.some((c) =>
+          cls.className !== undefined
+            ? c.className === cls.className
+            : c.name === cls.name,
+        )
+      ) {
         target.classes.push(cls);
       }
     }
@@ -99,7 +108,13 @@ function mergePublicApiClassGroupArrays(
       if (srcGroup.classes) {
         existing.classes ??= [];
         for (const cls of srcGroup.classes) {
-          if (!existing.classes.some((c: PublicApiClass) => c.className === cls.className)) {
+          if (
+            !existing.classes.some((c: PublicApiClass) =>
+              cls.className !== undefined
+                ? c.className === cls.className
+                : c.name === cls.name,
+            )
+          ) {
             existing.classes.push(cls);
           }
         }
@@ -115,7 +130,7 @@ function mergePublicApiClassGroupArrays(
 }
 
 function checkClassCssProperties(
-  className: string,
+  className: string | undefined,
   properties: Record<string, string> | undefined,
   knownCssProperties: Set<string>,
   errors: string[],
@@ -124,7 +139,9 @@ function checkClassCssProperties(
   for (const value of Object.values(properties)) {
     for (const ref of extractCustomPropertyReferences(value)) {
       if (!knownCssProperties.has(ref)) {
-        errors.push(`  .${className}: "${ref}" is not defined in publicTokens`);
+        errors.push(
+          `  .${className ?? '(unnamed)'}: "${ref}" is not defined in publicTokens`,
+        );
       }
     }
   }

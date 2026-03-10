@@ -10,11 +10,10 @@ import {
 } from './public-api-classes-utils.mjs';
 
 function makeClass(
-  overrides: Partial<PublicApiClass> & { className: string },
+  overrides: Partial<PublicApiClass> & { name?: string },
 ): PublicApiClass {
   return {
-    name: overrides.className,
-    properties: {},
+    name: overrides.name ?? overrides.className ?? '',
     ...overrides,
   };
 }
@@ -105,6 +104,49 @@ describe('generatePublicClassesCss', () => {
   it('should handle empty input', () => {
     const css = generatePublicClassesCss({}, '.sky-theme');
     expect(css).toBe('');
+  });
+
+  it('should skip deprecated-only classes that have no className or properties', () => {
+    const input: PublicApiClasses = {
+      classes: [
+        makeClass({
+          name: 'Old Class',
+          deprecatedClassName: 'sky-old-class',
+        }),
+        makeClass({
+          className: 'sky-theme-margin-top-xs',
+          properties: { 'margin-top': '0.5rem' },
+        }),
+      ],
+    };
+
+    const css = generatePublicClassesCss(input, '.sky-theme');
+
+    expect(css).not.toContain('Old Class');
+    expect(css).not.toContain('undefined');
+    expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
+  });
+
+  it('should skip deprecated-only classes in groups', () => {
+    const input: PublicApiClasses = {
+      groups: [
+        {
+          name: 'Spacing',
+          classes: [
+            makeClass({ name: 'Old Spacing', deprecatedClassName: 'sky-old-spacing' }),
+            makeClass({
+              className: 'sky-theme-margin-top-xs',
+              properties: { 'margin-top': '0.5rem' },
+            }),
+          ],
+        },
+      ],
+    };
+
+    const css = generatePublicClassesCss(input, '.sky-theme');
+
+    expect(css).not.toContain('undefined');
+    expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
   });
 
   it('should render both top-level classes and group classes', () => {
@@ -403,6 +445,26 @@ describe('mergePublicApiClassesResults', () => {
 
     expect(target.classes).toHaveLength(1);
     expect(target.groups).toHaveLength(1);
+  });
+
+  it('should not deduplicate distinct deprecated-only classes with no className', () => {
+    const target: PublicApiClasses = {
+      classes: [
+        makeClass({ name: 'Deprecated A', deprecatedClassName: 'sky-old-a' }),
+      ],
+    };
+    const source: PublicApiClasses = {
+      classes: [
+        makeClass({ name: 'Deprecated A', deprecatedClassName: 'sky-old-a-dup' }),
+        makeClass({ name: 'Deprecated B', deprecatedClassName: 'sky-old-b' }),
+      ],
+    };
+
+    mergePublicApiClassesResults(target, source);
+
+    // 'Deprecated A' already exists by name — deduplicated; 'Deprecated B' is new.
+    expect(target.classes).toHaveLength(2);
+    expect(target.classes!.map((c) => c.name)).toEqual(['Deprecated A', 'Deprecated B']);
   });
 
   it('should merge nested subgroups recursively', () => {

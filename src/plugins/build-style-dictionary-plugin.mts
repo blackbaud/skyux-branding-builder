@@ -96,6 +96,13 @@ async function generateDictionaryFiles(
             );
             const cssFiles = await publicTokenDictionary.formatPlatform('css') as GeneratedFile[];
             const jsonFiles = await publicTokenDictionary.formatPlatform('json') as GeneratedFile[];
+            if (publicTokenSet.deprecatedTokensPath) {
+              const deprecatedJson = await readFile(
+                path.join(process.cwd(), `${rootPath}${publicTokenSet.deprecatedTokensPath}`),
+                'utf-8',
+              );
+              jsonFiles.push({ output: deprecatedJson } as GeneratedFile);
+            }
             return { cssFiles, jsonFiles };
           }),
         );

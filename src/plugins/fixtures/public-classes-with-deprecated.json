@@ -1,0 +1,16 @@
+{
+  "classes": [
+    {
+      "name": "Default Text Color",
+      "className": "sky-theme-text-default",
+      "description": "Applies the default text color.",
+      "properties": {
+        "color": "var(--sky-theme-color-text-default)"
+      }
+    },
+    {
+      "name": "Old Text Color",
+      "deprecatedClassName": "sky-theme-old-text-color"
+    }
+  ]
+}

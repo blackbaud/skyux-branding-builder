@@ -330,6 +330,24 @@ describe('mergePublicApiResults', () => {
     const textGroup = target.groups![0].groups![0];
     expect(textGroup.tokens).toHaveLength(2);
   });
+
+  it('should not deduplicate distinct deprecated-only tokens with no customProperty', () => {
+    const target: PublicApiTokens = {
+      tokens: [{ name: 'Deprecated A', deprecatedCustomProperty: '--old-a' }],
+    };
+    const source: PublicApiTokens = {
+      tokens: [
+        { name: 'Deprecated A', deprecatedCustomProperty: '--old-a-dup' },
+        { name: 'Deprecated B', deprecatedCustomProperty: '--old-b' },
+      ],
+    };
+
+    mergePublicApiResults(target, source);
+
+    // 'Deprecated A' already exists by name — deduplicated; 'Deprecated B' is new.
+    expect(target.tokens).toHaveLength(2);
+    expect(target.tokens!.map((t) => t.name)).toEqual(['Deprecated A', 'Deprecated B']);
+  });
 });
 
 describe('collectPublicTokenCssProperties', () => {
@@ -382,5 +400,36 @@ describe('collectPublicTokenCssProperties', () => {
 
     expect(result).toBe(existing);
     expect(result).toEqual(new Set(['--existing', '--a']));
+  });
+
+  it('should skip tokens without a customProperty', () => {
+    const api: PublicApiTokens = {
+      tokens: [
+        { name: 'A', customProperty: '--a' },
+        { name: 'Deprecated Token', deprecatedCustomProperty: '--old' },
+      ],
+    };
+
+    const result = collectPublicTokenCssProperties(api);
+
+    expect(result).toEqual(new Set(['--a']));
+  });
+
+  it('should skip tokens without a customProperty inside groups', () => {
+    const api: PublicApiTokens = {
+      groups: [
+        {
+          groupName: 'Colors',
+          tokens: [
+            { name: 'A', customProperty: '--color-a' },
+            { name: 'Deprecated Color', deprecatedCustomProperty: '--old-color' },
+          ],
+        },
+      ],
+    };
+
+    const result = collectPublicTokenCssProperties(api);
+
+    expect(result).toEqual(new Set(['--color-a']));
   });
 });

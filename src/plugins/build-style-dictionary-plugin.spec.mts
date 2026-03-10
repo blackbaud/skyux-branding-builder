@@ -1173,4 +1173,251 @@ describe('buildStyleDictionaryPlugin', () => {
       expectedEmittedPublicApiClassesJsonFile,
     );
   });
+
+  it('should include deprecated-only classes (no className or properties) in the JSON output', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'rainbow.css',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+          publicTokens: [
+            {
+              name: 'public-colors',
+              path: 'public-colors.json',
+            },
+          ],
+          publicClasses: [
+            {
+              name: 'public-classes-with-deprecated',
+              path: 'public-classes-with-deprecated.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/rainbow.css',
+        source: `.sky-theme-rainbow {
+  --rainbow-color-gray-1: #e2e3e7;
+  --rainbow-color-gray-2: #c0c2c5;
+  --rainbow-color-red-1: #fc0330;
+  --rainbow-color-red-2: #8a2538;
+  --rainbow-space-s: 10px;
+}
+.sky-theme-rainbow {
+  --sky-color-background-danger: var(--rainbow-color-gray-1);
+  --sky-color-text-default: var(--rainbow-color-red-1);
+}
+`,
+      },
+    ];
+
+    // The deprecated-only class has no CSS output; only the normal class appears.
+    const expectedEmittedPublicApiFile = {
+      source: `.sky-theme-rainbow {
+  /* The background color for danger elements. */
+  --sky-theme-color-background-danger: var(--sky-color-background-danger);
+  /* The default text color. */
+  --sky-theme-color-text-default: var(--sky-color-text-default);
+}
+.sky-theme-rainbow .sky-theme-text-default {
+  color: var(--sky-theme-color-text-default);
+}
+`,
+    };
+
+    const expectedEmittedPublicApiJsonFile = {
+      source: JSON.stringify(
+        {
+          groups: [
+            {
+              groupName: 'Colors',
+              description: 'All color tokens.',
+              groups: [
+                {
+                  groupName: 'Text Colors',
+                  description: 'Text color tokens.',
+                  tokens: [
+                    {
+                      name: 'Default Text',
+                      customProperty: '--sky-theme-color-text-default',
+                      description: 'The default text color.',
+                      deprecatedCustomProperty: '--old-text-color',
+                    },
+                  ],
+                },
+                {
+                  groupName: 'Background Colors',
+                  description: 'Background color tokens.',
+                  tokens: [
+                    {
+                      name: 'Danger Background',
+                      customProperty: '--sky-theme-color-background-danger',
+                      description: 'The background color for danger elements.',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    };
+
+    // The JSON should contain both the normal class and the deprecated-only class.
+    const expectedEmittedPublicApiClassesJsonFile = {
+      source: JSON.stringify(
+        {
+          classes: [
+            {
+              name: 'Default Text Color',
+              className: 'sky-theme-text-default',
+              description: 'Applies the default text color.',
+              properties: { color: 'var(--sky-theme-color-text-default)' },
+            },
+            {
+              name: 'Old Text Color',
+              deprecatedClassName: 'sky-theme-old-text-color',
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    };
+
+    await validate(
+      tokenConfig,
+      expectedEmittedFiles,
+      undefined,
+      expectedEmittedPublicApiFile,
+      expectedEmittedPublicApiJsonFile,
+      expectedEmittedPublicApiClassesJsonFile,
+    );
+  });
+
+  it('should include deprecated-only tokens (no customProperty) from deprecatedTokensPath in the JSON output', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'rainbow.css',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+          publicTokens: [
+            {
+              name: 'public-colors',
+              path: 'public-colors.json',
+              deprecatedTokensPath: 'public-tokens-deprecated-only.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/rainbow.css',
+        source: `.sky-theme-rainbow {
+  --rainbow-color-gray-1: #e2e3e7;
+  --rainbow-color-gray-2: #c0c2c5;
+  --rainbow-color-red-1: #fc0330;
+  --rainbow-color-red-2: #8a2538;
+  --rainbow-space-s: 10px;
+}
+.sky-theme-rainbow {
+  --sky-color-background-danger: var(--rainbow-color-gray-1);
+  --sky-color-text-default: var(--rainbow-color-red-1);
+}
+`,
+      },
+    ];
+
+    // public-colors.json produces CSS; the deprecated-only entries are merged into the JSON only.
+    const expectedEmittedPublicApiFile = {
+      source: `.sky-theme-rainbow {
+  /* The background color for danger elements. */
+  --sky-theme-color-background-danger: var(--sky-color-background-danger);
+  /* The default text color. */
+  --sky-theme-color-text-default: var(--sky-color-text-default);
+}
+`,
+    };
+
+    const expectedEmittedPublicApiJsonFile = {
+      source: JSON.stringify(
+        {
+          groups: [
+            {
+              groupName: 'Colors',
+              description: 'All color tokens.',
+              groups: [
+                {
+                  groupName: 'Text Colors',
+                  description: 'Text color tokens.',
+                  tokens: [
+                    {
+                      name: 'Default Text',
+                      customProperty: '--sky-theme-color-text-default',
+                      description: 'The default text color.',
+                      deprecatedCustomProperty: '--old-text-color',
+                    },
+                  ],
+                },
+                {
+                  groupName: 'Background Colors',
+                  description: 'Background color tokens.',
+                  tokens: [
+                    {
+                      name: 'Danger Background',
+                      customProperty: '--sky-theme-color-background-danger',
+                      description: 'The background color for danger elements.',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+          tokens: [
+            {
+              name: 'Old Token',
+              deprecatedCustomProperty: '--sky-theme-old-token',
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    };
+
+    await validate(
+      tokenConfig,
+      expectedEmittedFiles,
+      undefined,
+      expectedEmittedPublicApiFile,
+      expectedEmittedPublicApiJsonFile,
+    );
+  });
 });
