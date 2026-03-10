@@ -490,6 +490,7 @@ describe('mergePublicApiClassesResults', () => {
     };
     const source: PublicApiClasses = {
       classes: [
+        // Different deprecatedClassName → distinct stable key despite same name as above.
         makeClass({ name: 'Deprecated A', deprecatedClassName: 'sky-old-a-dup' }),
         makeClass({ name: 'Deprecated B', deprecatedClassName: 'sky-old-b' }),
       ],
@@ -497,9 +498,50 @@ describe('mergePublicApiClassesResults', () => {
 
     mergePublicApiClassesResults(target, source);
 
-    // 'Deprecated A' already exists by name — deduplicated; 'Deprecated B' is new.
+    // All three have distinct stable keys (sky-old-a, sky-old-a-dup, sky-old-b).
+    expect(target.classes).toHaveLength(3);
+    expect(target.classes!.map((c) => c.deprecatedClassName)).toEqual([
+      'sky-old-a',
+      'sky-old-a-dup',
+      'sky-old-b',
+    ]);
+  });
+
+  it('should not deduplicate entries with the same name but different deprecatedClassName', () => {
+    const target: PublicApiClasses = {
+      classes: [
+        makeClass({ name: 'Old Style', deprecatedClassName: 'sky-old-color' }),
+      ],
+    };
+    const source: PublicApiClasses = {
+      classes: [
+        makeClass({ name: 'Old Style', deprecatedClassName: 'sky-old-spacing' }),
+      ],
+    };
+
+    mergePublicApiClassesResults(target, source);
+
+    // Different deprecatedClassName → distinct entries, not duplicates.
     expect(target.classes).toHaveLength(2);
-    expect(target.classes!.map((c) => c.name)).toEqual(['Deprecated A', 'Deprecated B']);
+    expect(target.classes!.map((c) => c.deprecatedClassName)).toEqual([
+      'sky-old-color',
+      'sky-old-spacing',
+    ]);
+  });
+
+  it('should not deduplicate entries with the same name but different htmlElement', () => {
+    const target: PublicApiClasses = {
+      classes: [makeClass({ name: 'Element Docs', htmlElement: 'button' })],
+    };
+    const source: PublicApiClasses = {
+      classes: [makeClass({ name: 'Element Docs', htmlElement: 'a' })],
+    };
+
+    mergePublicApiClassesResults(target, source);
+
+    // Different htmlElement → distinct entries, not duplicates.
+    expect(target.classes).toHaveLength(2);
+    expect(target.classes!.map((c) => c.htmlElement)).toEqual(['button', 'a']);
   });
 
   it('should merge nested subgroups recursively', () => {

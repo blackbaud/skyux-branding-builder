@@ -53,13 +53,7 @@ export function mergePublicApiClassesResults(
   if (source.classes) {
     target.classes ??= [];
     for (const cls of source.classes) {
-      if (
-        !target.classes.some((c) =>
-          cls.className !== undefined
-            ? c.className === cls.className
-            : c.name === cls.name,
-        )
-      ) {
+      if (!target.classes.some((c) => stableClassKey(c) === stableClassKey(cls))) {
         target.classes.push(cls);
       }
     }
@@ -109,11 +103,7 @@ function mergePublicApiClassGroupArrays(
         existing.classes ??= [];
         for (const cls of srcGroup.classes) {
           if (
-            !existing.classes.some((c: PublicApiClass) =>
-              cls.className !== undefined
-                ? c.className === cls.className
-                : c.name === cls.name,
-            )
+            !existing.classes.some((c: PublicApiClass) => stableClassKey(c) === stableClassKey(cls))
           ) {
             existing.classes.push(cls);
           }
@@ -162,4 +152,8 @@ function walkGroupCssProperties(
 
 function extractCustomPropertyReferences(value: string): string[] {
   return [...value.matchAll(/var\((--[^,)]+)/g)].map((m) => m[1].trim());
+}
+
+function stableClassKey(cls: PublicApiClass): string {
+  return cls.className ?? cls.deprecatedClassName ?? cls.htmlElement ?? cls.name;
 }

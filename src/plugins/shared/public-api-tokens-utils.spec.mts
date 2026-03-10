@@ -344,9 +344,31 @@ describe('mergePublicApiResults', () => {
 
     mergePublicApiResults(target, source);
 
-    // 'Deprecated A' already exists by name — deduplicated; 'Deprecated B' is new.
+    // All three have distinct stable keys (--old-a, --old-a-dup, --old-b).
+    expect(target.tokens).toHaveLength(3);
+    expect(target.tokens!.map((t) => t.deprecatedCustomProperty)).toEqual([
+      '--old-a',
+      '--old-a-dup',
+      '--old-b',
+    ]);
+  });
+
+  it('should not deduplicate entries with the same name but different deprecatedCustomProperty', () => {
+    const target: PublicApiTokens = {
+      tokens: [{ name: 'Old Token', deprecatedCustomProperty: '--old-color' }],
+    };
+    const source: PublicApiTokens = {
+      tokens: [{ name: 'Old Token', deprecatedCustomProperty: '--old-spacing' }],
+    };
+
+    mergePublicApiResults(target, source);
+
+    // Different deprecatedCustomProperty → distinct entries, not duplicates.
     expect(target.tokens).toHaveLength(2);
-    expect(target.tokens!.map((t) => t.name)).toEqual(['Deprecated A', 'Deprecated B']);
+    expect(target.tokens!.map((t) => t.deprecatedCustomProperty)).toEqual([
+      '--old-color',
+      '--old-spacing',
+    ]);
   });
 });
 

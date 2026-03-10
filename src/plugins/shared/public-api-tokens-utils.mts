@@ -94,13 +94,7 @@ export function mergePublicApiResults(
   if (source.tokens) {
     target.tokens ??= [];
     for (const token of source.tokens) {
-      if (
-        !target.tokens.some((t) =>
-          token.customProperty !== undefined
-            ? t.customProperty === token.customProperty
-            : t.name === token.name,
-        )
-      ) {
+      if (!target.tokens.some((t) => stableTokenKey(t) === stableTokenKey(token))) {
         target.tokens.push(token);
       }
     }
@@ -150,11 +144,7 @@ function mergePublicApiGroupArrays(
         existing.tokens ??= [];
         for (const token of srcGroup.tokens) {
           if (
-            !existing.tokens.some((t) =>
-              token.customProperty !== undefined
-                ? t.customProperty === token.customProperty
-                : t.name === token.name,
-            )
+            !existing.tokens.some((t) => stableTokenKey(t) === stableTokenKey(token))
           ) {
             existing.tokens.push(token);
           }
@@ -186,4 +176,8 @@ function collectGroupCssProperties(
       collectGroupCssProperties(subgroup, result);
     }
   }
+}
+
+function stableTokenKey(token: PublicApiToken): string {
+  return token.customProperty ?? token.deprecatedCustomProperty ?? token.name;
 }
