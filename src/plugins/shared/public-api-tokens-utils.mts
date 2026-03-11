@@ -11,6 +11,7 @@ interface BlackbaudDocsExtensions {
   name?: string;
   deprecatedCustomProperties?: string[];
   obsoleteCustomProperties?: string[];
+  intendedCssProperty?: string;
 }
 
 export function buildPublicApiGroups(
@@ -54,6 +55,10 @@ export function buildPublicApiGroups(
 
     if (tokenExt.obsoleteCustomProperties) {
       tokenEntry.obsoleteCustomProperties = tokenExt.obsoleteCustomProperties;
+    }
+
+    if (tokenExt.intendedCssProperty) {
+      tokenEntry.intendedCssProperty = tokenExt.intendedCssProperty;
     }
 
     // Tokens with no group ancestry go to the top-level tokens array.

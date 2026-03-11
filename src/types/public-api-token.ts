@@ -4,4 +4,5 @@ export interface PublicApiToken {
   description?: string;
   deprecatedCustomProperties?: string[];
   obsoleteCustomProperties?: string[];
+  intendedCssProperty?: string;
 }

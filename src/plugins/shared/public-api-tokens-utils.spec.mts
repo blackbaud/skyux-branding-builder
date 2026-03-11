@@ -12,7 +12,7 @@ import {
 const DOCS_NS = 'com.blackbaud.developer.docs';
 
 /** Minimal token stub that satisfies the fields read by the utils. */
-function fakeToken(
+function mockToken(
   overrides: {
     name: string;
     path: string[];
@@ -76,7 +76,7 @@ function buildTree(
 
 describe('buildPublicApiGroups', () => {
   it('should place ungrouped tokens in the top-level tokens array', () => {
-    const t = fakeToken({
+    const t = mockToken({
       name: 'sky-theme-spacing-small',
       path: ['theme', 'spacing', 'small'],
       $description: 'Small spacing.',
@@ -97,7 +97,7 @@ describe('buildPublicApiGroups', () => {
   });
 
   it('should fall back to token.name when docs name is missing', () => {
-    const t = fakeToken({
+    const t = mockToken({
       name: 'sky-theme-spacing-small',
       path: ['theme', 'spacing', 'small'],
     });
@@ -109,7 +109,7 @@ describe('buildPublicApiGroups', () => {
   });
 
   it('should include deprecatedCustomProperties when present', () => {
-    const t = fakeToken({
+    const t = mockToken({
       name: 'sky-theme-color-text-default',
       path: ['theme', 'color', 'text', 'default'],
       docsExt: {
@@ -125,7 +125,7 @@ describe('buildPublicApiGroups', () => {
   });
 
   it('should include obsoleteCustomProperties when present', () => {
-    const t = fakeToken({
+    const t = mockToken({
       name: 'sky-theme-color-text-default',
       path: ['theme', 'color', 'text', 'default'],
       docsExt: {
@@ -140,8 +140,24 @@ describe('buildPublicApiGroups', () => {
     expect(result.tokens![0].obsoleteCustomProperties).toEqual(['--removed-text-color']);
   });
 
+  it('should include intendedCssProperty when present', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-text-default',
+      path: ['theme', 'color', 'text', 'default'],
+      docsExt: {
+        name: 'Default Text',
+        intendedCssProperty: 'color',
+      },
+    });
+
+    const tree = buildTree([t]);
+    const result = buildPublicApiGroups([t], tree);
+
+    expect(result.tokens![0].intendedCssProperty).toBe('color');
+  });
+
   it('should nest tokens under groups from ancestor extensions', () => {
-    const t = fakeToken({
+    const t = mockToken({
       name: 'sky-theme-color-text-default',
       path: ['theme', 'color', 'text', 'default'],
       $description: 'The default text color.',
@@ -176,12 +192,12 @@ describe('buildPublicApiGroups', () => {
   });
 
   it('should group multiple tokens under the same group', () => {
-    const t1 = fakeToken({
+    const t1 = mockToken({
       name: 'sky-theme-color-text-default',
       path: ['theme', 'color', 'text', 'default'],
       docsExt: { name: 'Default Text' },
     });
-    const t2 = fakeToken({
+    const t2 = mockToken({
       name: 'sky-theme-color-text-secondary',
       path: ['theme', 'color', 'text', 'secondary'],
       docsExt: { name: 'Secondary Text' },
@@ -199,7 +215,7 @@ describe('buildPublicApiGroups', () => {
   });
 
   it('should handle tokens with no description', () => {
-    const t = fakeToken({
+    const t = mockToken({
       name: 'sky-theme-spacing-small',
       path: ['theme', 'spacing', 'small'],
       docsExt: { name: 'Small Spacing' },
