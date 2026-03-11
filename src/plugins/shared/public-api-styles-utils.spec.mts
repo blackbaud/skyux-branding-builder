@@ -725,4 +725,39 @@ describe('mergePublicApiStylesResults', () => {
     const textGroup = target.groups![0].groups![0];
     expect(textGroup.styles).toHaveLength(2);
   });
+
+  it('should exclude top-level styles flagged with excludeFromDocs', () => {
+    const target: PublicApiStyles = {};
+    const source: PublicApiStyles = {
+      styles: [
+        makeStyle({ className: 'sky-theme-visible', properties: { display: 'block' } }),
+        makeStyle({ className: 'sky-theme-hidden', properties: { display: 'none' }, excludeFromDocs: true }),
+      ],
+    };
+
+    mergePublicApiStylesResults(target, source);
+
+    expect(target.styles).toHaveLength(1);
+    expect(target.styles![0].className).toBe('sky-theme-visible');
+  });
+
+  it('should exclude styles inside groups flagged with excludeFromDocs', () => {
+    const target: PublicApiStyles = {};
+    const source: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Spacing',
+          styles: [
+            makeStyle({ className: 'sky-theme-xs', properties: { 'margin-top': '0.5rem' } }),
+            makeStyle({ className: 'sky-theme-internal', properties: { 'margin-top': '1rem' }, excludeFromDocs: true }),
+          ],
+        },
+      ],
+    };
+
+    mergePublicApiStylesResults(target, source);
+
+    expect(target.groups![0].styles).toHaveLength(1);
+    expect(target.groups![0].styles![0].className).toBe('sky-theme-xs');
+  });
 });

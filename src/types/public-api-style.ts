@@ -6,4 +6,5 @@ export interface PublicApiStyle {
   description?: string;
   deprecatedClassNames?: string[];
   obsoleteClassNames?: string[];
+  excludeFromDocs?: boolean;
 }

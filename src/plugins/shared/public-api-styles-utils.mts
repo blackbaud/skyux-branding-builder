@@ -53,6 +53,7 @@ export function mergePublicApiStylesResults(
   if (source.styles) {
     target.styles ??= [];
     for (const cls of source.styles) {
+      if (cls.excludeFromDocs) continue;
       if (!target.styles.some((c) => stableClassKey(c) === stableClassKey(cls))) {
         target.styles.push(cls);
       }
@@ -102,6 +103,7 @@ function mergePublicApiStyleGroupArrays(
       if (srcGroup.styles) {
         existing.styles ??= [];
         for (const cls of srcGroup.styles) {
+          if (cls.excludeFromDocs) continue;
           if (
             !existing.styles.some((c: PublicApiStyle) => stableClassKey(c) === stableClassKey(cls))
           ) {
@@ -114,7 +116,16 @@ function mergePublicApiStyleGroupArrays(
         mergePublicApiStyleGroupArrays(existing.groups, srcGroup.groups);
       }
     } else {
-      target.push(srcGroup);
+      const newGroup = { ...srcGroup };
+      if (newGroup.styles) {
+        newGroup.styles = newGroup.styles.filter((cls) => !cls.excludeFromDocs);
+      }
+      if (newGroup.groups) {
+        const filteredGroups: PublicApiStyleGroup[] = [];
+        mergePublicApiStyleGroupArrays(filteredGroups, newGroup.groups);
+        newGroup.groups = filteredGroups;
+      }
+      target.push(newGroup);
     }
   }
 }
