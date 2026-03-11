@@ -9,7 +9,7 @@ import {
   validatePublicStylesCssProperties,
 } from './public-api-styles-utils.mjs';
 
-function makeClass(
+function makeStyle(
   overrides: Partial<PublicApiStyle> & { name?: string },
 ): PublicApiStyle {
   return {
@@ -22,7 +22,7 @@ describe('generatePublicClassesCss', () => {
   it('should generate flat CSS for top-level classes', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           className: 'sky-theme-margin-top-xs',
           properties: { 'margin-top': '0.5rem' },
         }),
@@ -41,7 +41,7 @@ describe('generatePublicClassesCss', () => {
   it('should not include description comments', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           className: 'sky-theme-foo',
           description: 'A helpful class.',
           properties: { display: 'block' },
@@ -61,7 +61,7 @@ describe('generatePublicClassesCss', () => {
           name: 'Margin top',
           description: 'Top margins.',
           styles: [
-            makeClass({
+            makeStyle({
               className: 'sky-theme-margin-top-xs',
               properties: { 'margin-top': '0.5rem' },
             }),
@@ -85,7 +85,7 @@ describe('generatePublicClassesCss', () => {
             {
               name: 'Text Colors',
               styles: [
-                makeClass({
+                makeStyle({
                   className: 'sky-theme-text-default',
                   properties: { color: 'black' },
                 }),
@@ -109,11 +109,11 @@ describe('generatePublicClassesCss', () => {
   it('should skip deprecated-only classes that have no className or properties', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           name: 'Old Class',
-          deprecatedClassName: 'sky-old-class',
+          deprecatedClassNames: ['sky-old-class'],
         }),
-        makeClass({
+        makeStyle({
           className: 'sky-theme-margin-top-xs',
           properties: { 'margin-top': '0.5rem' },
         }),
@@ -133,8 +133,8 @@ describe('generatePublicClassesCss', () => {
         {
           name: 'Spacing',
           styles: [
-            makeClass({ name: 'Old Spacing', deprecatedClassName: 'sky-old-spacing' }),
-            makeClass({
+            makeStyle({ name: 'Old Spacing', deprecatedClassNames: ['sky-old-spacing'] }),
+            makeStyle({
               className: 'sky-theme-margin-top-xs',
               properties: { 'margin-top': '0.5rem' },
             }),
@@ -152,8 +152,8 @@ describe('generatePublicClassesCss', () => {
   it('should skip htmlElement-only classes (no className or properties)', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({ name: 'Button', htmlElement: 'button' }),
-        makeClass({
+        makeStyle({ name: 'Button', htmlElement: 'button' }),
+        makeStyle({
           className: 'sky-theme-margin-top-xs',
           properties: { 'margin-top': '0.5rem' },
         }),
@@ -170,7 +170,7 @@ describe('generatePublicClassesCss', () => {
   it('should generate CSS only for the className when both className and htmlElement are present', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           className: 'sky-theme-text-default',
           htmlElement: 'p',
           properties: { color: 'black' },
@@ -187,7 +187,7 @@ describe('generatePublicClassesCss', () => {
   it('should render both top-level classes and group classes', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           className: 'sky-theme-ungrouped',
           properties: { display: 'block' },
         }),
@@ -196,7 +196,7 @@ describe('generatePublicClassesCss', () => {
         {
           name: 'Colors',
           styles: [
-            makeClass({
+            makeStyle({
               className: 'sky-theme-text-default',
               properties: { color: 'black' },
             }),
@@ -214,11 +214,11 @@ describe('generatePublicClassesCss', () => {
   it('should generate multiple class blocks with the parent selector', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           className: 'sky-theme-a',
           properties: { display: 'block' },
         }),
-        makeClass({
+        makeStyle({
           className: 'sky-theme-b',
           properties: { display: 'flex' },
         }),
@@ -247,7 +247,7 @@ describe('validatePublicClassesCssProperties', () => {
   it('should not throw when all references are known', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           className: 'sky-theme-text-default',
           properties: { color: 'var(--sky-theme-color-text-default)' },
         }),
@@ -262,7 +262,7 @@ describe('validatePublicClassesCssProperties', () => {
   it('should throw for unknown custom property references', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           className: 'sky-theme-text-missing',
           properties: { color: 'var(--sky-theme-color-nonexistent)' },
         }),
@@ -277,7 +277,7 @@ describe('validatePublicClassesCssProperties', () => {
   it('should include the set name in the error message', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           className: 'sky-theme-bad',
           properties: { color: 'var(--nope)' },
         }),
@@ -295,7 +295,7 @@ describe('validatePublicClassesCssProperties', () => {
         {
           name: 'Colors',
           styles: [
-            makeClass({
+            makeStyle({
               className: 'sky-theme-bad',
               properties: { color: 'var(--unknown-prop)' },
             }),
@@ -318,7 +318,7 @@ describe('validatePublicClassesCssProperties', () => {
             {
               name: 'Inner',
               styles: [
-                makeClass({
+                makeStyle({
                   className: 'sky-theme-nested-bad',
                   properties: { color: 'var(--deeply-unknown)' },
                 }),
@@ -337,7 +337,7 @@ describe('validatePublicClassesCssProperties', () => {
   it('should not throw for literal values without var()', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           className: 'sky-theme-static',
           properties: { 'margin-top': '0.5rem' },
         }),
@@ -352,11 +352,11 @@ describe('validatePublicClassesCssProperties', () => {
   it('should report multiple errors at once', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           className: 'sky-theme-a',
           properties: { color: 'var(--missing-1)' },
         }),
-        makeClass({
+        makeStyle({
           className: 'sky-theme-b',
           properties: { color: 'var(--missing-2)' },
         }),
@@ -368,12 +368,12 @@ describe('validatePublicClassesCssProperties', () => {
     ).toThrow(/--missing-1[\s\S]*--missing-2/);
   });
 
-  it('should use deprecatedClassName as the label when className is absent', () => {
+  it('should use deprecatedClassNames as the label when className is absent', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           name: 'Old Class',
-          deprecatedClassName: 'sky-old-class',
+          deprecatedClassNames: ['sky-old-class'],
           properties: { color: 'var(--unknown-prop)' },
         }),
       ],
@@ -384,10 +384,10 @@ describe('validatePublicClassesCssProperties', () => {
     ).toThrow('sky-old-class: has "properties" but no "className"');
   });
 
-  it('should use htmlElement as the label when className and deprecatedClassName are absent', () => {
+  it('should use htmlElement as the label when className and deprecatedClassNames are absent', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           name: 'Paragraph',
           htmlElement: 'p',
           properties: { color: 'var(--unknown-prop)' },
@@ -403,8 +403,8 @@ describe('validatePublicClassesCssProperties', () => {
   it('should not throw for docs-only entries with no className and no properties', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeClass({ name: 'Old Class', deprecatedClassName: 'sky-old-class' }),
-        makeClass({ name: 'Button', htmlElement: 'button' }),
+        makeStyle({ name: 'Old Class', deprecatedClassNames: ['sky-old-class'] }),
+        makeStyle({ name: 'Button', htmlElement: 'button' }),
       ],
     };
 
@@ -418,9 +418,9 @@ describe('validatePublicClassesCssProperties', () => {
     // not about unknown var() refs — ensuring the ref validator is not invoked.
     const input: PublicApiStyles = {
       styles: [
-        makeClass({
+        makeStyle({
           name: 'Old Class',
-          deprecatedClassName: 'sky-old-class',
+          deprecatedClassNames: ['sky-old-class'],
           properties: { color: 'var(--sky-theme-color-text-default)' },
         }),
       ],
@@ -440,13 +440,13 @@ describe('mergePublicApiStylesResults', () => {
   it('should merge top-level classes without duplicates', () => {
     const target: PublicApiStyles = {
       styles: [
-        makeClass({ className: 'sky-theme-a', properties: { display: 'block' } }),
+        makeStyle({ className: 'sky-theme-a', properties: { display: 'block' } }),
       ],
     };
     const source: PublicApiStyles = {
       styles: [
-        makeClass({ className: 'sky-theme-a', properties: { display: 'none' } }),
-        makeClass({ className: 'sky-theme-b', properties: { display: 'flex' } }),
+        makeStyle({ className: 'sky-theme-a', properties: { display: 'none' } }),
+        makeStyle({ className: 'sky-theme-b', properties: { display: 'flex' } }),
       ],
     };
 
@@ -463,7 +463,7 @@ describe('mergePublicApiStylesResults', () => {
         {
           name: 'Colors',
           styles: [
-            makeClass({
+            makeStyle({
               className: 'sky-theme-text-default',
               properties: { color: 'black' },
             }),
@@ -476,11 +476,11 @@ describe('mergePublicApiStylesResults', () => {
         {
           name: 'Colors',
           styles: [
-            makeClass({
+            makeStyle({
               className: 'sky-theme-text-default',
               properties: { color: 'white' },
             }),
-            makeClass({
+            makeStyle({
               className: 'sky-theme-text-secondary',
               properties: { color: 'gray' },
             }),
@@ -539,7 +539,7 @@ describe('mergePublicApiStylesResults', () => {
   it('should initialize target arrays when missing', () => {
     const target: PublicApiStyles = {};
     const source: PublicApiStyles = {
-      styles: [makeClass({ className: 'sky-theme-x', properties: {} })],
+      styles: [makeStyle({ className: 'sky-theme-x', properties: {} })],
       groups: [{ name: 'G' }],
     };
 
@@ -552,14 +552,14 @@ describe('mergePublicApiStylesResults', () => {
   it('should not deduplicate distinct deprecated-only classes with no className', () => {
     const target: PublicApiStyles = {
       styles: [
-        makeClass({ name: 'Deprecated A', deprecatedClassName: 'sky-old-a' }),
+        makeStyle({ name: 'Deprecated A', deprecatedClassNames: ['sky-old-a'] }),
       ],
     };
     const source: PublicApiStyles = {
       styles: [
-        // Different deprecatedClassName → distinct stable key despite same name as above.
-        makeClass({ name: 'Deprecated A', deprecatedClassName: 'sky-old-a-dup' }),
-        makeClass({ name: 'Deprecated B', deprecatedClassName: 'sky-old-b' }),
+        // Different deprecatedClassNames → distinct stable key despite same name as above.
+        makeStyle({ name: 'Deprecated A', deprecatedClassNames: ['sky-old-a-dup'] }),
+        makeStyle({ name: 'Deprecated B', deprecatedClassNames: ['sky-old-b'] }),
       ],
     };
 
@@ -567,30 +567,30 @@ describe('mergePublicApiStylesResults', () => {
 
     // All three have distinct stable keys (sky-old-a, sky-old-a-dup, sky-old-b).
     expect(target.styles).toHaveLength(3);
-    expect(target.styles!.map((c) => c.deprecatedClassName)).toEqual([
+    expect(target.styles!.map((c) => c.deprecatedClassNames![0])).toEqual([
       'sky-old-a',
       'sky-old-a-dup',
       'sky-old-b',
     ]);
   });
 
-  it('should not deduplicate entries with the same name but different deprecatedClassName', () => {
+  it('should not deduplicate entries with the same name but different deprecatedClassNames', () => {
     const target: PublicApiStyles = {
       styles: [
-        makeClass({ name: 'Old Style', deprecatedClassName: 'sky-old-color' }),
+        makeStyle({ name: 'Old Style', deprecatedClassNames: ['sky-old-color'] }),
       ],
     };
     const source: PublicApiStyles = {
       styles: [
-        makeClass({ name: 'Old Style', deprecatedClassName: 'sky-old-spacing' }),
+        makeStyle({ name: 'Old Style', deprecatedClassNames: ['sky-old-spacing'] }),
       ],
     };
 
     mergePublicApiStylesResults(target, source);
 
-    // Different deprecatedClassName → distinct entries, not duplicates.
+    // Different deprecatedClassNames → distinct entries, not duplicates.
     expect(target.styles).toHaveLength(2);
-    expect(target.styles!.map((c) => c.deprecatedClassName)).toEqual([
+    expect(target.styles!.map((c) => c.deprecatedClassNames![0])).toEqual([
       'sky-old-color',
       'sky-old-spacing',
     ]);
@@ -598,10 +598,10 @@ describe('mergePublicApiStylesResults', () => {
 
   it('should not deduplicate entries with the same name but different htmlElement', () => {
     const target: PublicApiStyles = {
-      styles: [makeClass({ name: 'Element Docs', htmlElement: 'button' })],
+      styles: [makeStyle({ name: 'Element Docs', htmlElement: 'button' })],
     };
     const source: PublicApiStyles = {
-      styles: [makeClass({ name: 'Element Docs', htmlElement: 'a' })],
+      styles: [makeStyle({ name: 'Element Docs', htmlElement: 'a' })],
     };
 
     mergePublicApiStylesResults(target, source);
@@ -613,10 +613,10 @@ describe('mergePublicApiStylesResults', () => {
 
   it('should not deduplicate className entry and htmlElement entry sharing the same value', () => {
     const target: PublicApiStyles = {
-      styles: [makeClass({ className: 'button', properties: { display: 'inline' } })],
+      styles: [makeStyle({ className: 'button', properties: { display: 'inline' } })],
     };
     const source: PublicApiStyles = {
-      styles: [makeClass({ name: 'Button element', htmlElement: 'button' })],
+      styles: [makeStyle({ name: 'Button element', htmlElement: 'button' })],
     };
 
     mergePublicApiStylesResults(target, source);
@@ -636,7 +636,7 @@ describe('mergePublicApiStylesResults', () => {
             {
               name: 'Text',
               styles: [
-                makeClass({ className: 'sky-theme-text-a', properties: {} }),
+                makeStyle({ className: 'sky-theme-text-a', properties: {} }),
               ],
             },
           ],
@@ -651,7 +651,7 @@ describe('mergePublicApiStylesResults', () => {
             {
               name: 'Text',
               styles: [
-                makeClass({ className: 'sky-theme-text-b', properties: {} }),
+                makeStyle({ className: 'sky-theme-text-b', properties: {} }),
               ],
             },
           ],

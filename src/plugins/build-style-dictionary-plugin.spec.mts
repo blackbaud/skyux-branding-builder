@@ -1291,7 +1291,7 @@ describe('buildStyleDictionaryPlugin', () => {
             },
             {
               name: 'Old Text Color',
-              deprecatedClassName: 'sky-theme-old-text-color',
+              deprecatedClassNames: ['sky-theme-old-text-color'],
             },
           ],
         },

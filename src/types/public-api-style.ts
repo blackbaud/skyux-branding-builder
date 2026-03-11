@@ -4,5 +4,5 @@ export interface PublicApiStyle {
   htmlElement?: string;
   properties?: Record<string, string>;
   description?: string;
-  deprecatedClassName?: string;
+  deprecatedClassNames?: string[];
 }

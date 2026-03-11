@@ -164,11 +164,11 @@ function extractCustomPropertyReferences(value: string): string[] {
 
 function stableClassKey(cls: PublicApiStyle): string {
   if (cls.className !== undefined) return `className:${cls.className}`;
-  if (cls.deprecatedClassName !== undefined) return `deprecatedClassName:${cls.deprecatedClassName}`;
+  if (cls.deprecatedClassNames !== undefined) return `deprecatedClassNames:${[...cls.deprecatedClassNames].sort().join(',')}`;
   if (cls.htmlElement !== undefined) return `htmlElement:${cls.htmlElement}`;
   return `name:${cls.name}`;
 }
 
 function classLabel(cls: PublicApiStyle): string {
-  return cls.className ?? cls.deprecatedClassName ?? cls.htmlElement ?? cls.name;
+  return cls.className ?? cls.deprecatedClassNames?.join(', ') ?? cls.htmlElement ?? cls.name;
 }
