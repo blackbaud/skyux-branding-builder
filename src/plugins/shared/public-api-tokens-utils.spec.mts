@@ -124,6 +124,22 @@ describe('buildPublicApiGroups', () => {
     expect(result.tokens![0].deprecatedCustomProperties).toEqual(['--old-text-color']);
   });
 
+  it('should include obsoleteCustomProperties when present', () => {
+    const t = fakeToken({
+      name: 'sky-theme-color-text-default',
+      path: ['theme', 'color', 'text', 'default'],
+      docsExt: {
+        name: 'Default Text',
+        obsoleteCustomProperties: ['--removed-text-color'],
+      },
+    });
+
+    const tree = buildTree([t]);
+    const result = buildPublicApiGroups([t], tree);
+
+    expect(result.tokens![0].obsoleteCustomProperties).toEqual(['--removed-text-color']);
+  });
+
   it('should nest tokens under groups from ancestor extensions', () => {
     const t = fakeToken({
       name: 'sky-theme-color-text-default',
@@ -370,6 +386,28 @@ describe('mergePublicApiResults', () => {
       ['--old-spacing'],
     ]);
   });
+
+  it('should not deduplicate distinct obsolete-only tokens with no customProperty', () => {
+    const target: PublicApiTokens = {
+      tokens: [{ name: 'Obsolete A', obsoleteCustomProperties: ['--removed-a'] }],
+    };
+    const source: PublicApiTokens = {
+      tokens: [
+        { name: 'Obsolete A', obsoleteCustomProperties: ['--removed-a-dup'] },
+        { name: 'Obsolete B', obsoleteCustomProperties: ['--removed-b'] },
+      ],
+    };
+
+    mergePublicApiResults(target, source);
+
+    expect(target.tokens).toHaveLength(3);
+    expect(target.tokens!.map((t) => t.obsoleteCustomProperties)).toEqual([
+      ['--removed-a'],
+      ['--removed-a-dup'],
+      ['--removed-b'],
+    ]);
+  });
+
 });
 
 describe('collectPublicTokenCssProperties', () => {

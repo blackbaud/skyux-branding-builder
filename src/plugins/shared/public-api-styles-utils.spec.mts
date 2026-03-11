@@ -127,6 +127,27 @@ describe('generatePublicClassesCss', () => {
     expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
   });
 
+  it('should skip obsolete-only classes that have no className or properties', () => {
+    const input: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          name: 'Removed Class',
+          obsoleteClassNames: ['sky-removed-class'],
+        }),
+        makeStyle({
+          className: 'sky-theme-margin-top-xs',
+          properties: { 'margin-top': '0.5rem' },
+        }),
+      ],
+    };
+
+    const css = generatePublicStylesCss(input, '.sky-theme');
+
+    expect(css).not.toContain('Removed Class');
+    expect(css).not.toContain('undefined');
+    expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
+  });
+
   it('should skip deprecated-only classes in groups', () => {
     const input: PublicApiStyles = {
       groups: [
@@ -400,10 +421,26 @@ describe('validatePublicClassesCssProperties', () => {
     ).toThrow('p: has "properties" but no "className"');
   });
 
+  it('should use obsoleteClassNames as the label when className and deprecatedClassNames are absent', () => {
+    const input: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          name: 'Removed Class',
+          obsoleteClassNames: ['sky-removed-class'],
+          properties: { color: 'var(--unknown-prop)' },
+        }),
+      ],
+    };
+
+    expect(() =>
+      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
+    ).toThrow('sky-removed-class: has "properties" but no "className"');
+  });
+
   it('should not throw for docs-only entries with no className and no properties', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeStyle({ name: 'Old Class', deprecatedClassNames: ['sky-old-class'] }),
+        makeStyle({ name: 'Old Class', deprecatedClassNames: ['sky-old-class'], obsoleteClassNames: ['sky-removed-class'] }),
         makeStyle({ name: 'Button', htmlElement: 'button' }),
       ],
     };
@@ -595,6 +632,30 @@ describe('mergePublicApiStylesResults', () => {
       'sky-old-spacing',
     ]);
   });
+
+  it('should not deduplicate distinct obsolete-only classes with no className', () => {
+    const target: PublicApiStyles = {
+      styles: [
+        makeStyle({ name: 'Obsolete A', obsoleteClassNames: ['sky-removed-a'] }),
+      ],
+    };
+    const source: PublicApiStyles = {
+      styles: [
+        makeStyle({ name: 'Obsolete A', obsoleteClassNames: ['sky-removed-a-dup'] }),
+        makeStyle({ name: 'Obsolete B', obsoleteClassNames: ['sky-removed-b'] }),
+      ],
+    };
+
+    mergePublicApiStylesResults(target, source);
+
+    expect(target.styles).toHaveLength(3);
+    expect(target.styles!.map((c) => c.obsoleteClassNames)).toEqual([
+      ['sky-removed-a'],
+      ['sky-removed-a-dup'],
+      ['sky-removed-b'],
+    ]);
+  });
+
 
   it('should not deduplicate entries with the same name but different htmlElement', () => {
     const target: PublicApiStyles = {

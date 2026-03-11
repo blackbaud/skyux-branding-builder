@@ -10,6 +10,7 @@ interface BlackbaudDocsExtensions {
   groupName?: string;
   name?: string;
   deprecatedCustomProperties?: string[];
+  obsoleteCustomProperties?: string[];
 }
 
 export function buildPublicApiGroups(
@@ -49,6 +50,10 @@ export function buildPublicApiGroups(
 
     if (tokenExt.deprecatedCustomProperties) {
       tokenEntry.deprecatedCustomProperties = tokenExt.deprecatedCustomProperties;
+    }
+
+    if (tokenExt.obsoleteCustomProperties) {
+      tokenEntry.obsoleteCustomProperties = tokenExt.obsoleteCustomProperties;
     }
 
     // Tokens with no group ancestry go to the top-level tokens array.
@@ -179,5 +184,5 @@ function collectGroupCssProperties(
 }
 
 function stableTokenKey(token: PublicApiToken): string {
-  return token.customProperty ?? token.deprecatedCustomProperties?.sort().join(',') ?? token.name;
+  return token.customProperty ?? token.deprecatedCustomProperties?.sort().join(',') ?? token.obsoleteCustomProperties?.sort().join(',') ?? token.name;
 }
