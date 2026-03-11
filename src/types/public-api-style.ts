@@ -1,4 +1,4 @@
-export interface PublicApiClass {
+export interface PublicApiStyle {
   name: string;
   className?: string;
   htmlElement?: string;

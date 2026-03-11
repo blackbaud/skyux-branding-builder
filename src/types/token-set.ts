@@ -1,4 +1,4 @@
-import { PublicClassSet } from './public-class-set.js';
+import { PublicStyleSet } from './public-class-set.js';
 import { PublicTokenSet } from './public-token-set.js';
 import { ReferenceTokenSet } from './reference-token-set.js';
 
@@ -9,6 +9,6 @@ export type TokenSet = {
   outputPath: string;
   referenceTokens: ReferenceTokenSet[];
   publicTokens?: PublicTokenSet[];
-  publicClasses?: PublicClassSet[];
+  publicStyles?: PublicStyleSet[];
 };
 

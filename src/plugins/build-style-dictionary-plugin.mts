@@ -7,7 +7,7 @@ import { formattedVariables, sortByName } from 'style-dictionary/utils';
 import { getTransforms, register } from '@tokens-studio/sd-transforms';
 import { TokenConfig } from '../types/token-config.js';
 import { PublicApiTokens } from '../types/public-api-tokens.js';
-import { PublicApiClasses } from '../types/public-api-classes.js';
+import { PublicApiStyles } from '../types/public-api-styles.js';
 import { GeneratedFile } from '../types/generated-file.js';
 import { SkyTokenOptions } from '../types/sky-token-options.js';
 import { fixAssetsUrlValue } from './shared/assets-utils.mjs';
@@ -17,10 +17,10 @@ import {
   mergePublicApiResults,
 } from './shared/public-api-tokens-utils.mjs';
 import {
-  generatePublicClassesCss,
-  mergePublicApiClassesResults,
-  validatePublicClassesCssProperties,
-} from './shared/public-api-classes-utils.mjs';
+  generatePublicStylesCss as generatePublicStylesCss,
+  mergePublicApiStylesResults,
+  validatePublicStylesCssProperties as validatePublicStylesCssProperties,
+} from './shared/public-api-styles-utils.mjs';
 import {
   addAssetsCss,
   getBaseDictionaryConfig,
@@ -110,7 +110,7 @@ async function generateDictionaryFiles(
         publicTokenJsonFiles.push(...publicResults.flatMap((r) => r.jsonFiles));
       }
 
-      if (tokenSet.publicClasses?.length) {
+      if (tokenSet.publicStyles?.length) {
         // Build the set of known CSS custom properties from this token set's public tokens.
         const knownCssProperties = new Set<string>();
         for (const file of publicTokenJsonFiles) {
@@ -119,21 +119,21 @@ async function generateDictionaryFiles(
         }
 
         const classResults = await Promise.all(
-          tokenSet.publicClasses.map(async (publicClassSet) => {
+          tokenSet.publicStyles.map(async (publicStyleSet) => {
             const json = await readFile(
-              path.join(process.cwd(), `${rootPath}${publicClassSet.path}`),
+              path.join(process.cwd(), `${rootPath}${publicStyleSet.path}`),
               'utf-8',
             );
-            const publicApiClasses = JSON.parse(json) as PublicApiClasses;
-            validatePublicClassesCssProperties(publicApiClasses, knownCssProperties, publicClassSet.name);
+            const publicApiStyles = JSON.parse(json) as PublicApiStyles;
+            validatePublicStylesCssProperties(publicApiStyles, knownCssProperties, publicStyleSet.name);
             return {
               css: {
-                output: generatePublicClassesCss(publicApiClasses, tokenSet.selector),
-                destination: `${tokenSet.name}/${publicClassSet.name}.css`,
+                output: generatePublicStylesCss(publicApiStyles, tokenSet.selector),
+                destination: `${tokenSet.name}/${publicStyleSet.name}.css`,
               },
               json: {
-                output: JSON.stringify(publicApiClasses),
-                destination: `${tokenSet.name}/${publicClassSet.name}.json`,
+                output: JSON.stringify(publicApiStyles),
+                destination: `${tokenSet.name}/${publicStyleSet.name}.json`,
               },
             };
           }),
@@ -372,16 +372,16 @@ ${variables}
         });
       }
 
-      const publicApiClassesJsonData: PublicApiClasses = {};
+      const publicApiStylesJsonData: PublicApiStyles = {};
       for (const file of publicClassJsonFiles) {
-        const parsed = JSON.parse(file.output as string) as PublicApiClasses;
-        mergePublicApiClassesResults(publicApiClassesJsonData, parsed);
+        const parsed = JSON.parse(file.output as string) as PublicApiStyles;
+        mergePublicApiStylesResults(publicApiStylesJsonData, parsed);
       }
-      if (publicApiClassesJsonData.groups || publicApiClassesJsonData.classes) {
+      if (publicApiStylesJsonData.groups || publicApiStylesJsonData.styles) {
         this.emitFile({
           type: 'asset',
-          fileName: 'bundles/public-api-classes.json',
-          source: JSON.stringify(publicApiClassesJsonData, null, 2),
+          fileName: 'bundles/public-api-styles.json',
+          source: JSON.stringify(publicApiStylesJsonData, null, 2),
         });
       }
     },

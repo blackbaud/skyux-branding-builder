@@ -1,12 +1,12 @@
-import { PublicApiClass } from '../../types/public-api-class.js';
-import { PublicApiClassGroup } from '../../types/public-api-class-group.js';
-import { PublicApiClasses } from '../../types/public-api-classes.js';
+import { PublicApiStyle } from '../../types/public-api-style.js';
+import { PublicApiStyleGroup } from '../../types/public-api-style-group.js';
+import { PublicApiStyles } from '../../types/public-api-styles.js';
 
-export function generatePublicClassesCss(
-  publicApiClasses: PublicApiClasses,
+export function generatePublicStylesCss(
+  publicApiStyles: PublicApiStyles,
   selector: string,
 ): string {
-  const classes = collectAllClasses(publicApiClasses);
+  const classes = collectAllStyles(publicApiStyles);
   const lines: string[] = [];
 
   for (const cls of classes) {
@@ -25,17 +25,17 @@ export function generatePublicClassesCss(
   return lines.join('\n');
 }
 
-export function validatePublicClassesCssProperties(
-  publicApiClasses: PublicApiClasses,
+export function validatePublicStylesCssProperties(
+  publicApiStyles: PublicApiStyles,
   knownCssProperties: Set<string>,
   setName: string,
 ): void {
   const errors: string[] = [];
 
-  for (const cls of publicApiClasses.classes ?? []) {
+  for (const cls of publicApiStyles.styles ?? []) {
     checkClassCssProperties(cls, knownCssProperties, errors);
   }
-  for (const group of publicApiClasses.groups ?? []) {
+  for (const group of publicApiStyles.groups ?? []) {
     walkGroupCssProperties(group, knownCssProperties, errors);
   }
 
@@ -46,31 +46,31 @@ export function validatePublicClassesCssProperties(
   }
 }
 
-export function mergePublicApiClassesResults(
-  target: PublicApiClasses,
-  source: PublicApiClasses,
+export function mergePublicApiStylesResults(
+  target: PublicApiStyles,
+  source: PublicApiStyles,
 ): void {
-  if (source.classes) {
-    target.classes ??= [];
-    for (const cls of source.classes) {
-      if (!target.classes.some((c) => stableClassKey(c) === stableClassKey(cls))) {
-        target.classes.push(cls);
+  if (source.styles) {
+    target.styles ??= [];
+    for (const cls of source.styles) {
+      if (!target.styles.some((c) => stableClassKey(c) === stableClassKey(cls))) {
+        target.styles.push(cls);
       }
     }
   }
   if (source.groups) {
     target.groups ??= [];
-    mergePublicApiClassGroupArrays(target.groups, source.groups);
+    mergePublicApiStyleGroupArrays(target.groups, source.groups);
   }
 }
 
-function collectAllClasses(publicApiClasses: PublicApiClasses): PublicApiClass[] {
-  const result: PublicApiClass[] = [];
+function collectAllStyles(publicApiStyles: PublicApiStyles): PublicApiStyle[] {
+  const result: PublicApiStyle[] = [];
 
-  for (const cls of publicApiClasses.classes ?? []) {
+  for (const cls of publicApiStyles.styles ?? []) {
     result.push(cls);
   }
-  for (const group of publicApiClasses.groups ?? []) {
+  for (const group of publicApiStyles.groups ?? []) {
     collectGroupClasses(group, result);
   }
 
@@ -78,10 +78,10 @@ function collectAllClasses(publicApiClasses: PublicApiClasses): PublicApiClass[]
 }
 
 function collectGroupClasses(
-  group: PublicApiClassGroup,
-  result: PublicApiClass[],
+  group: PublicApiStyleGroup,
+  result: PublicApiStyle[],
 ): void {
-  for (const cls of group.classes ?? []) {
+  for (const cls of group.styles ?? []) {
     result.push(cls);
   }
   for (const subgroup of group.groups ?? []) {
@@ -89,9 +89,9 @@ function collectGroupClasses(
   }
 }
 
-function mergePublicApiClassGroupArrays(
-  target: PublicApiClassGroup[],
-  source: PublicApiClassGroup[],
+function mergePublicApiStyleGroupArrays(
+  target: PublicApiStyleGroup[],
+  source: PublicApiStyleGroup[],
 ): void {
   for (const srcGroup of source) {
     const existing = target.find((g) => g.name === srcGroup.name);
@@ -99,19 +99,19 @@ function mergePublicApiClassGroupArrays(
       if (srcGroup.description && !existing.description) {
         existing.description = srcGroup.description;
       }
-      if (srcGroup.classes) {
-        existing.classes ??= [];
-        for (const cls of srcGroup.classes) {
+      if (srcGroup.styles) {
+        existing.styles ??= [];
+        for (const cls of srcGroup.styles) {
           if (
-            !existing.classes.some((c: PublicApiClass) => stableClassKey(c) === stableClassKey(cls))
+            !existing.styles.some((c: PublicApiStyle) => stableClassKey(c) === stableClassKey(cls))
           ) {
-            existing.classes.push(cls);
+            existing.styles.push(cls);
           }
         }
       }
       if (srcGroup.groups) {
         existing.groups ??= [];
-        mergePublicApiClassGroupArrays(existing.groups, srcGroup.groups);
+        mergePublicApiStyleGroupArrays(existing.groups, srcGroup.groups);
       }
     } else {
       target.push(srcGroup);
@@ -120,7 +120,7 @@ function mergePublicApiClassGroupArrays(
 }
 
 function checkClassCssProperties(
-  cls: PublicApiClass,
+  cls: PublicApiStyle,
   knownCssProperties: Set<string>,
   errors: string[],
 ): void {
@@ -146,11 +146,11 @@ function checkClassCssProperties(
 }
 
 function walkGroupCssProperties(
-  group: PublicApiClassGroup,
+  group: PublicApiStyleGroup,
   knownCssProperties: Set<string>,
   errors: string[],
 ): void {
-  for (const cls of group.classes ?? []) {
+  for (const cls of group.styles ?? []) {
     checkClassCssProperties(cls, knownCssProperties, errors);
   }
   for (const subgroup of group.groups ?? []) {
@@ -162,13 +162,13 @@ function extractCustomPropertyReferences(value: string): string[] {
   return [...value.matchAll(/var\((--[^,)]+)/g)].map((m) => m[1].trim());
 }
 
-function stableClassKey(cls: PublicApiClass): string {
+function stableClassKey(cls: PublicApiStyle): string {
   if (cls.className !== undefined) return `className:${cls.className}`;
   if (cls.deprecatedClassName !== undefined) return `deprecatedClassName:${cls.deprecatedClassName}`;
   if (cls.htmlElement !== undefined) return `htmlElement:${cls.htmlElement}`;
   return `name:${cls.name}`;
 }
 
-function classLabel(cls: PublicApiClass): string {
+function classLabel(cls: PublicApiStyle): string {
   return cls.className ?? cls.deprecatedClassName ?? cls.htmlElement ?? cls.name;
 }

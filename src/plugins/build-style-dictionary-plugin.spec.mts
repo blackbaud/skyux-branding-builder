@@ -28,7 +28,7 @@ describe('buildStyleDictionaryPlugin', () => {
     assetsCssMock: (basePath?: string) => Promise<string> = async () => '',
     expectedEmittedPublicApiFile?: { source: string },
     expectedEmittedPublicApiJsonFile?: { source: string },
-    expectedEmittedPublicApiClassesJsonFile?: { source: string },
+    expectedEmittedPublicApiStylesJsonFile?: { source: string },
   ): Promise<void> {
     vi.spyOn(assetsUtils, 'generateAssetsCss').mockImplementation(
       assetsCssMock,
@@ -42,7 +42,7 @@ describe('buildStyleDictionaryPlugin', () => {
       expectedEmittedFiles.length * 2
         + (expectedEmittedPublicApiFile ? 1 : 0)
         + (expectedEmittedPublicApiJsonFile ? 1 : 0)
-        + (expectedEmittedPublicApiClassesJsonFile ? 1 : 0),
+        + (expectedEmittedPublicApiStylesJsonFile ? 1 : 0),
     );
 
     for (const expectedFile of expectedEmittedFiles) {
@@ -81,11 +81,11 @@ describe('buildStyleDictionaryPlugin', () => {
       });
     }
 
-    if (expectedEmittedPublicApiClassesJsonFile) {
+    if (expectedEmittedPublicApiStylesJsonFile) {
       expect(emitFileSpy).toHaveBeenCalledWith({
         type: 'asset',
-        fileName: 'bundles/public-api-classes.json',
-        source: expectedEmittedPublicApiClassesJsonFile.source,
+        fileName: 'bundles/public-api-styles.json',
+        source: expectedEmittedPublicApiStylesJsonFile.source,
       });
     }
   }
@@ -719,7 +719,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'rainbow-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-grouped',
               path: 'public-classes-grouped.json',
@@ -757,14 +757,14 @@ describe('buildStyleDictionaryPlugin', () => {
 `,
     };
 
-    const expectedEmittedPublicApiClassesGroupedJsonFile = {
+    const expectedEmittedPublicApiStylesGroupedJsonFile = {
       source: JSON.stringify(
         {
           groups: [
             {
               name: 'Margin top',
               description: 'Use these classes to add a top margin to an element.',
-              classes: [
+              styles: [
                 {
                   name: 'Top x-small',
                   className: 'sky-theme-margin-top-xs',
@@ -791,7 +791,7 @@ describe('buildStyleDictionaryPlugin', () => {
       undefined,
       expectedEmittedPublicApiFile,
       undefined,
-      expectedEmittedPublicApiClassesGroupedJsonFile,
+      expectedEmittedPublicApiStylesGroupedJsonFile,
     );
   });
 
@@ -811,7 +811,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'rainbow-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-nested',
               path: 'public-classes-nested.json',
@@ -849,10 +849,10 @@ describe('buildStyleDictionaryPlugin', () => {
 `,
     };
 
-    const expectedEmittedPublicApiClassesNestedJsonFile = {
+    const expectedEmittedPublicApiStylesNestedJsonFile = {
       source: JSON.stringify(
         {
-          classes: [
+          styles: [
             {
               name: 'Ungrouped',
               className: 'sky-theme-ungrouped',
@@ -867,7 +867,7 @@ describe('buildStyleDictionaryPlugin', () => {
                 {
                   name: 'Text Colors',
                   description: 'Text color classes.',
-                  classes: [
+                  styles: [
                     {
                       name: 'Default Text',
                       className: 'sky-theme-text-default',
@@ -890,7 +890,7 @@ describe('buildStyleDictionaryPlugin', () => {
       undefined,
       expectedEmittedPublicApiFile,
       undefined,
-      expectedEmittedPublicApiClassesNestedJsonFile,
+      expectedEmittedPublicApiStylesNestedJsonFile,
     );
   });
 
@@ -916,7 +916,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'public-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-invalid-refs',
               path: 'public-classes-invalid-refs.json',
@@ -955,7 +955,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'public-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-valid-refs',
               path: 'public-classes-valid-refs.json',
@@ -1036,10 +1036,10 @@ describe('buildStyleDictionaryPlugin', () => {
       ),
     };
 
-    const expectedEmittedPublicApiClassesValidRefsJsonFile = {
+    const expectedEmittedPublicApiStylesValidRefsJsonFile = {
       source: JSON.stringify(
         {
-          classes: [
+          styles: [
             {
               name: 'Default Text Color',
               className: 'sky-theme-text-default',
@@ -1059,7 +1059,7 @@ describe('buildStyleDictionaryPlugin', () => {
       undefined,
       expectedEmittedPublicApiFile,
       expectedEmittedPublicApiJsonFile,
-      expectedEmittedPublicApiClassesValidRefsJsonFile,
+      expectedEmittedPublicApiStylesValidRefsJsonFile,
     );
   });
 
@@ -1079,7 +1079,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'rainbow-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-grouped',
               path: 'public-classes-grouped.json',
@@ -1131,14 +1131,14 @@ describe('buildStyleDictionaryPlugin', () => {
 
     // The JSON should contain sky-theme-margin-top-xs exactly once (first occurrence wins),
     // sky-theme-margin-top-s from the first set, and sky-theme-margin-top-l from the second.
-    const expectedEmittedPublicApiClassesJsonFile = {
+    const expectedEmittedPublicApiStylesJsonFile = {
       source: JSON.stringify(
         {
           groups: [
             {
               name: 'Margin top',
               description: 'Use these classes to add a top margin to an element.',
-              classes: [
+              styles: [
                 {
                   name: 'Top x-small',
                   className: 'sky-theme-margin-top-xs',
@@ -1170,7 +1170,7 @@ describe('buildStyleDictionaryPlugin', () => {
       undefined,
       expectedEmittedPublicApiFile,
       undefined,
-      expectedEmittedPublicApiClassesJsonFile,
+      expectedEmittedPublicApiStylesJsonFile,
     );
   });
 
@@ -1196,7 +1196,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'public-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-with-deprecated',
               path: 'public-classes-with-deprecated.json',
@@ -1279,10 +1279,10 @@ describe('buildStyleDictionaryPlugin', () => {
     };
 
     // The JSON should contain both the normal class and the deprecated-only class.
-    const expectedEmittedPublicApiClassesJsonFile = {
+    const expectedEmittedPublicApiStylesJsonFile = {
       source: JSON.stringify(
         {
-          classes: [
+          styles: [
             {
               name: 'Default Text Color',
               className: 'sky-theme-text-default',
@@ -1306,7 +1306,7 @@ describe('buildStyleDictionaryPlugin', () => {
       undefined,
       expectedEmittedPublicApiFile,
       expectedEmittedPublicApiJsonFile,
-      expectedEmittedPublicApiClassesJsonFile,
+      expectedEmittedPublicApiStylesJsonFile,
     );
   });
 
