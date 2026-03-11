@@ -9,7 +9,7 @@ const EXTENSIONS_NAMESPACE = 'com.blackbaud.developer.docs';
 interface BlackbaudDocsExtensions {
   groupName?: string;
   name?: string;
-  deprecatedCustomProperty?: string;
+  deprecatedCustomProperties?: string[];
 }
 
 export function buildPublicApiGroups(
@@ -47,8 +47,8 @@ export function buildPublicApiGroups(
       tokenEntry.description = token.$description;
     }
 
-    if (tokenExt.deprecatedCustomProperty) {
-      tokenEntry.deprecatedCustomProperty = tokenExt.deprecatedCustomProperty;
+    if (tokenExt.deprecatedCustomProperties) {
+      tokenEntry.deprecatedCustomProperties = tokenExt.deprecatedCustomProperties;
     }
 
     // Tokens with no group ancestry go to the top-level tokens array.
@@ -179,5 +179,5 @@ function collectGroupCssProperties(
 }
 
 function stableTokenKey(token: PublicApiToken): string {
-  return token.customProperty ?? token.deprecatedCustomProperty ?? token.name;
+  return token.customProperty ?? token.deprecatedCustomProperties?.sort().join(',') ?? token.name;
 }

@@ -13,7 +13,7 @@
           "$extensions": {
             "com.blackbaud.developer.docs": {
               "name": "Default Text",
-              "deprecatedCustomProperty": "--old-text-color"
+              "deprecatedCustomProperties": ["--old-text-color"]
             }
           }
         }

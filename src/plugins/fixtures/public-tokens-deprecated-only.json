@@ -2,7 +2,7 @@
   "tokens": [
     {
       "name": "Old Token",
-      "deprecatedCustomProperty": "--sky-theme-old-token"
+      "deprecatedCustomProperties": ["--sky-theme-old-token"]
     }
   ]
 }
