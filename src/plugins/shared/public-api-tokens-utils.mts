@@ -12,7 +12,7 @@ interface BlackbaudDocsExtensions {
   name?: string;
   deprecatedCustomProperties?: string[];
   obsoleteCustomProperties?: string[];
-  intendedCssProperty?: string;
+  cssProperty?: string;
   demoMetadata?: DemoMetadata;
 }
 
@@ -59,8 +59,8 @@ export function buildPublicApiGroups(
       tokenEntry.obsoleteCustomProperties = tokenExt.obsoleteCustomProperties;
     }
 
-    if (tokenExt.intendedCssProperty) {
-      tokenEntry.intendedCssProperty = tokenExt.intendedCssProperty;
+    if (tokenExt.cssProperty) {
+      tokenEntry.cssProperty = tokenExt.cssProperty;
     }
 
     if (tokenExt.demoMetadata) {

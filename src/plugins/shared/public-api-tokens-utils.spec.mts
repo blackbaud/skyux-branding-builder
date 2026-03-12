@@ -140,20 +140,20 @@ describe('buildPublicApiGroups', () => {
     expect(result.tokens![0].obsoleteCustomProperties).toEqual(['--removed-text-color']);
   });
 
-  it('should include intendedCssProperty when present', () => {
+  it('should include cssProperty when present', () => {
     const t = mockToken({
       name: 'sky-theme-color-text-default',
       path: ['theme', 'color', 'text', 'default'],
       docsExt: {
         name: 'Default Text',
-        intendedCssProperty: 'color',
+        cssProperty: 'color',
       },
     });
 
     const tree = buildTree([t]);
     const result = buildPublicApiGroups([t], tree);
 
-    expect(result.tokens![0].intendedCssProperty).toBe('color');
+    expect(result.tokens![0].cssProperty).toBe('color');
   });
 
   it('should include demoMetadata when present', () => {
