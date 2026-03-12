@@ -10,14 +10,22 @@ export function generatePublicStylesCss(
   const lines: string[] = [];
 
   for (const cls of classes) {
-    if (!cls.className || !cls.properties) {
-      continue;
+    if (cls.className && cls.properties) {
+      lines.push(`${selector} .${cls.className} {`);
+      for (const [prop, value] of Object.entries(cls.properties)) {
+        lines.push(`  ${prop}: ${value};`);
+      }
+      lines.push('}');
     }
-    lines.push(`${selector} .${cls.className} {`);
-    for (const [prop, value] of Object.entries(cls.properties)) {
-      lines.push(`  ${prop}: ${value};`);
+    if (cls.selectors && cls.selectors.length > 0 && cls.properties) {
+      for (const sel of cls.selectors) {
+        lines.push(`${selector} ${sel} {`);
+        for (const [prop, value] of Object.entries(cls.properties)) {
+          lines.push(`  ${prop}: ${value};`);
+        }
+        lines.push('}');
+      }
     }
-    lines.push('}');
   }
 
   lines.push('');
@@ -135,22 +143,25 @@ function checkClassCssProperties(
   knownCssProperties: Set<string>,
   errors: string[],
 ): void {
-  if (!cls.className) {
+  const hasClassName = !!cls.className;
+  const hasSelectors = !!(cls.selectors && cls.selectors.length > 0);
+
+  if (!hasClassName && !hasSelectors) {
     if (cls.properties) {
       const label = classLabel(cls);
       errors.push(
-        `  ${label}: has "properties" but no "className"; CSS cannot be generated for this entry`,
+        `  ${label}: has "properties" but no "className" or "selectors"; CSS cannot be generated for this entry`,
       );
     }
     return;
   }
+
   if (!cls.properties) return;
+  const label = hasClassName ? `.${cls.className}` : classLabel(cls);
   for (const value of Object.values(cls.properties)) {
     for (const ref of extractCustomPropertyReferences(value)) {
       if (!knownCssProperties.has(ref)) {
-        errors.push(
-          `  .${cls.className}: "${ref}" is not defined in publicTokens`,
-        );
+        errors.push(`  ${label}: "${ref}" is not defined in publicTokens`);
       }
     }
   }
@@ -177,10 +188,10 @@ function stableClassKey(cls: PublicApiStyle): string {
   if (cls.className !== undefined) return `className:${cls.className}`;
   if (cls.deprecatedClassNames !== undefined) return `deprecatedClassNames:${[...cls.deprecatedClassNames].sort().join(',')}`;
   if (cls.obsoleteClassNames !== undefined) return `obsoleteClassNames:${[...cls.obsoleteClassNames].sort().join(',')}`;
-  if (cls.htmlElement !== undefined) return `htmlElement:${cls.htmlElement}`;
+  if (cls.selectors !== undefined) return `selectors:${[...cls.selectors].sort().join(',')}`;
   return `name:${cls.name}`;
 }
 
 function classLabel(cls: PublicApiStyle): string {
-  return cls.className ?? cls.deprecatedClassNames?.join(', ') ?? cls.obsoleteClassNames?.join(', ') ?? cls.htmlElement ?? cls.name;
+  return cls.className ?? cls.deprecatedClassNames?.join(', ') ?? cls.obsoleteClassNames?.join(', ') ?? cls.selectors?.join(', ') ?? cls.name;
 }

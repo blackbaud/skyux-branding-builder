@@ -170,10 +170,10 @@ describe('generatePublicClassesCss', () => {
     expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
   });
 
-  it('should skip htmlElement-only classes (no className or properties)', () => {
+  it('should skip selectors-only entries when no properties present', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeStyle({ name: 'Button', htmlElement: 'button' }),
+        makeStyle({ name: 'Button', selectors: ['button'] }),
         makeStyle({
           className: 'sky-theme-margin-top-xs',
           properties: { 'margin-top': '0.5rem' },
@@ -188,12 +188,12 @@ describe('generatePublicClassesCss', () => {
     expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
   });
 
-  it('should generate CSS only for the className when both className and htmlElement are present', () => {
+  it('should generate CSS for both className and selectors when both are present', () => {
     const input: PublicApiStyles = {
       styles: [
         makeStyle({
           className: 'sky-theme-text-default',
-          htmlElement: 'p',
+          selectors: ['p'],
           properties: { color: 'black' },
         }),
       ],
@@ -202,7 +202,25 @@ describe('generatePublicClassesCss', () => {
     const css = generatePublicStylesCss(input, '.sky-theme');
 
     expect(css).toContain('.sky-theme .sky-theme-text-default {');
-    expect(css).not.toContain('.sky-theme p {');
+    expect(css).toContain('.sky-theme p {');
+  });
+
+  it('should generate CSS for each selector in the selectors list', () => {
+    const input: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          name: 'Base Headings',
+          selectors: ['h1', 'h2', 'h3'],
+          properties: { 'font-weight': 'bold' },
+        }),
+      ],
+    };
+
+    const css = generatePublicStylesCss(input, '.sky-theme');
+
+    expect(css).toContain('.sky-theme h1 {');
+    expect(css).toContain('.sky-theme h2 {');
+    expect(css).toContain('.sky-theme h3 {');
   });
 
   it('should render both top-level classes and group classes', () => {
@@ -405,12 +423,12 @@ describe('validatePublicClassesCssProperties', () => {
     ).toThrow('sky-old-class: has "properties" but no "className"');
   });
 
-  it('should use htmlElement as the label when className and deprecatedClassNames are absent', () => {
+  it('should validate var() references for selectors entries', () => {
     const input: PublicApiStyles = {
       styles: [
         makeStyle({
           name: 'Paragraph',
-          htmlElement: 'p',
+          selectors: ['p'],
           properties: { color: 'var(--unknown-prop)' },
         }),
       ],
@@ -418,7 +436,7 @@ describe('validatePublicClassesCssProperties', () => {
 
     expect(() =>
       validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow('p: has "properties" but no "className"');
+    ).toThrow('p: "--unknown-prop" is not defined in publicTokens');
   });
 
   it('should use obsoleteClassNames as the label when className and deprecatedClassNames are absent', () => {
@@ -437,11 +455,11 @@ describe('validatePublicClassesCssProperties', () => {
     ).toThrow('sky-removed-class: has "properties" but no "className"');
   });
 
-  it('should not throw for docs-only entries with no className and no properties', () => {
+  it('should not throw for docs-only entries with no properties', () => {
     const input: PublicApiStyles = {
       styles: [
         makeStyle({ name: 'Old Class', deprecatedClassNames: ['sky-old-class'], obsoleteClassNames: ['sky-removed-class'] }),
-        makeStyle({ name: 'Button', htmlElement: 'button' }),
+        makeStyle({ name: 'Button', selectors: ['button'] }),
       ],
     };
 
@@ -657,35 +675,35 @@ describe('mergePublicApiStylesResults', () => {
   });
 
 
-  it('should not deduplicate entries with the same name but different htmlElement', () => {
+  it('should not deduplicate entries with the same name but different selectors', () => {
     const target: PublicApiStyles = {
-      styles: [makeStyle({ name: 'Element Docs', htmlElement: 'button' })],
+      styles: [makeStyle({ name: 'Element Docs', selectors: ['button'] })],
     };
     const source: PublicApiStyles = {
-      styles: [makeStyle({ name: 'Element Docs', htmlElement: 'a' })],
+      styles: [makeStyle({ name: 'Element Docs', selectors: ['a'] })],
     };
 
     mergePublicApiStylesResults(target, source);
 
-    // Different htmlElement → distinct entries, not duplicates.
+    // Different selectors → distinct entries, not duplicates.
     expect(target.styles).toHaveLength(2);
-    expect(target.styles!.map((c) => c.htmlElement)).toEqual(['button', 'a']);
+    expect(target.styles!.map((c) => c.selectors)).toEqual([['button'], ['a']]);
   });
 
-  it('should not deduplicate className entry and htmlElement entry sharing the same value', () => {
+  it('should not deduplicate className entry and selectors entry sharing the same value', () => {
     const target: PublicApiStyles = {
       styles: [makeStyle({ className: 'button', properties: { display: 'inline' } })],
     };
     const source: PublicApiStyles = {
-      styles: [makeStyle({ name: 'Button element', htmlElement: 'button' })],
+      styles: [makeStyle({ name: 'Button element', selectors: ['button'] })],
     };
 
     mergePublicApiStylesResults(target, source);
 
-    // 'button' as className and 'button' as htmlElement are different kinds — both survive.
+    // 'button' as className and 'button' in selectors are different kinds — both survive.
     expect(target.styles).toHaveLength(2);
     expect(target.styles![0].className).toBe('button');
-    expect(target.styles![1].htmlElement).toBe('button');
+    expect(target.styles![1].selectors).toEqual(['button']);
   });
 
   it('should merge nested subgroups recursively', () => {
