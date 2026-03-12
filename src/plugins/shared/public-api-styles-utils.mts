@@ -6,21 +6,21 @@ export function generatePublicStylesCss(
   publicApiStyles: PublicApiStyles,
   selector: string,
 ): string {
-  const classes = collectAllStyles(publicApiStyles);
+  const styles = collectAllStyles(publicApiStyles);
   const lines: string[] = [];
 
-  for (const cls of classes) {
-    if (cls.className && cls.properties) {
-      lines.push(`${selector} .${cls.className} {`);
-      for (const [prop, value] of Object.entries(cls.properties)) {
+  for (const style of styles) {
+    if (style.className && style.properties) {
+      lines.push(`${selector} .${style.className} {`);
+      for (const [prop, value] of Object.entries(style.properties)) {
         lines.push(`  ${prop}: ${value};`);
       }
       lines.push('}');
     }
-    if (cls.selectors && cls.selectors.length > 0 && cls.properties) {
-      for (const sel of cls.selectors) {
+    if (style.selectors && style.selectors.length > 0 && style.properties) {
+      for (const sel of style.selectors) {
         lines.push(`${selector} ${sel} {`);
-        for (const [prop, value] of Object.entries(cls.properties)) {
+        for (const [prop, value] of Object.entries(style.properties)) {
           lines.push(`  ${prop}: ${value};`);
         }
         lines.push('}');
@@ -40,8 +40,8 @@ export function validatePublicStylesCssProperties(
 ): void {
   const errors: string[] = [];
 
-  for (const cls of publicApiStyles.styles ?? []) {
-    checkClassCssProperties(cls, knownCssProperties, errors);
+  for (const style of publicApiStyles.styles ?? []) {
+    checkStyleCssProperties(style, knownCssProperties, errors);
   }
   for (const group of publicApiStyles.groups ?? []) {
     walkGroupCssProperties(group, knownCssProperties, errors);
@@ -60,10 +60,10 @@ export function mergePublicApiStylesResults(
 ): void {
   if (source.styles) {
     target.styles ??= [];
-    for (const cls of source.styles) {
-      if (cls.excludeFromDocs) continue;
-      if (!target.styles.some((c) => stableClassKey(c) === stableClassKey(cls))) {
-        target.styles.push(cls);
+    for (const style of source.styles) {
+      if (style.excludeFromDocs) continue;
+      if (!target.styles.some((c) => stableStyleKey(c) === stableStyleKey(style))) {
+        target.styles.push(style);
       }
     }
   }
@@ -76,25 +76,25 @@ export function mergePublicApiStylesResults(
 function collectAllStyles(publicApiStyles: PublicApiStyles): PublicApiStyle[] {
   const result: PublicApiStyle[] = [];
 
-  for (const cls of publicApiStyles.styles ?? []) {
-    result.push(cls);
+  for (const style of publicApiStyles.styles ?? []) {
+    result.push(style);
   }
   for (const group of publicApiStyles.groups ?? []) {
-    collectGroupClasses(group, result);
+    collectGroupStyles(group, result);
   }
 
   return result;
 }
 
-function collectGroupClasses(
+function collectGroupStyles(
   group: PublicApiStyleGroup,
   result: PublicApiStyle[],
 ): void {
-  for (const cls of group.styles ?? []) {
-    result.push(cls);
+  for (const style of group.styles ?? []) {
+    result.push(style);
   }
   for (const subgroup of group.groups ?? []) {
-    collectGroupClasses(subgroup, result);
+    collectGroupStyles(subgroup, result);
   }
 }
 
@@ -110,12 +110,12 @@ function mergePublicApiStyleGroupArrays(
       }
       if (srcGroup.styles) {
         existing.styles ??= [];
-        for (const cls of srcGroup.styles) {
-          if (cls.excludeFromDocs) continue;
+        for (const style of srcGroup.styles) {
+          if (style.excludeFromDocs) continue;
           if (
-            !existing.styles.some((c: PublicApiStyle) => stableClassKey(c) === stableClassKey(cls))
+            !existing.styles.some((c: PublicApiStyle) => stableStyleKey(c) === stableStyleKey(style))
           ) {
-            existing.styles.push(cls);
+            existing.styles.push(style);
           }
         }
       }
@@ -126,7 +126,7 @@ function mergePublicApiStyleGroupArrays(
     } else {
       const newGroup = { ...srcGroup };
       if (newGroup.styles) {
-        newGroup.styles = newGroup.styles.filter((cls) => !cls.excludeFromDocs);
+        newGroup.styles = newGroup.styles.filter((style) => !style.excludeFromDocs);
       }
       if (newGroup.groups) {
         const filteredGroups: PublicApiStyleGroup[] = [];
@@ -138,17 +138,17 @@ function mergePublicApiStyleGroupArrays(
   }
 }
 
-function checkClassCssProperties(
-  cls: PublicApiStyle,
+function checkStyleCssProperties(
+  style: PublicApiStyle,
   knownCssProperties: Set<string>,
   errors: string[],
 ): void {
-  const hasClassName = !!cls.className;
-  const hasSelectors = !!(cls.selectors && cls.selectors.length > 0);
+  const hasClassName = !!style.className;
+  const hasSelectors = !!(style.selectors && style.selectors.length > 0);
 
   if (!hasClassName && !hasSelectors) {
-    if (cls.properties) {
-      const label = classLabel(cls);
+    if (style.properties) {
+      const label = styleLabel(style);
       errors.push(
         `  ${label}: has "properties" but no "className" or "selectors"; CSS cannot be generated for this entry`,
       );
@@ -156,9 +156,9 @@ function checkClassCssProperties(
     return;
   }
 
-  if (!cls.properties) return;
-  const label = hasClassName ? `.${cls.className}` : classLabel(cls);
-  for (const value of Object.values(cls.properties)) {
+  if (!style.properties) return;
+  const label = hasClassName ? `.${style.className}` : styleLabel(style);
+  for (const value of Object.values(style.properties)) {
     for (const ref of extractCustomPropertyReferences(value)) {
       if (!knownCssProperties.has(ref)) {
         errors.push(`  ${label}: "${ref}" is not defined in publicTokens`);
@@ -172,8 +172,8 @@ function walkGroupCssProperties(
   knownCssProperties: Set<string>,
   errors: string[],
 ): void {
-  for (const cls of group.styles ?? []) {
-    checkClassCssProperties(cls, knownCssProperties, errors);
+  for (const style of group.styles ?? []) {
+    checkStyleCssProperties(style, knownCssProperties, errors);
   }
   for (const subgroup of group.groups ?? []) {
     walkGroupCssProperties(subgroup, knownCssProperties, errors);
@@ -184,14 +184,14 @@ function extractCustomPropertyReferences(value: string): string[] {
   return [...value.matchAll(/var\((--[^,)]+)/g)].map((m) => m[1].trim());
 }
 
-function stableClassKey(cls: PublicApiStyle): string {
-  if (cls.className !== undefined) return `className:${cls.className}`;
-  if (cls.deprecatedClassNames !== undefined) return `deprecatedClassNames:${[...cls.deprecatedClassNames].sort().join(',')}`;
-  if (cls.obsoleteClassNames !== undefined) return `obsoleteClassNames:${[...cls.obsoleteClassNames].sort().join(',')}`;
-  if (cls.selectors !== undefined) return `selectors:${[...cls.selectors].sort().join(',')}`;
-  return `name:${cls.name}`;
+function stableStyleKey(style: PublicApiStyle): string {
+  if (style.className !== undefined) return `className:${style.className}`;
+  if (style.deprecatedClassNames !== undefined) return `deprecatedClassNames:${[...style.deprecatedClassNames].sort().join(',')}`;
+  if (style.obsoleteClassNames !== undefined) return `obsoleteClassNames:${[...style.obsoleteClassNames].sort().join(',')}`;
+  if (style.selectors !== undefined) return `selectors:${[...style.selectors].sort().join(',')}`;
+  return `name:${style.name}`;
 }
 
-function classLabel(cls: PublicApiStyle): string {
-  return cls.className ?? cls.deprecatedClassNames?.join(', ') ?? cls.obsoleteClassNames?.join(', ') ?? cls.selectors?.join(', ') ?? cls.name;
+function styleLabel(style: PublicApiStyle): string {
+  return style.className ?? style.deprecatedClassNames?.join(', ') ?? style.obsoleteClassNames?.join(', ') ?? style.selectors?.join(', ') ?? style.name;
 }

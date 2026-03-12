@@ -18,7 +18,7 @@ function makeStyle(
   };
 }
 
-describe('generatePublicClassesCss', () => {
+describe('generatePublicStylesCss', () => {
   it('should generate flat CSS for top-level classes', () => {
     const input: PublicApiStyles = {
       styles: [
@@ -277,7 +277,7 @@ describe('generatePublicClassesCss', () => {
   });
 });
 
-describe('validatePublicClassesCssProperties', () => {
+describe('validatePublicStylesCssProperties', () => {
   const knownProps = new Set([
     '--sky-theme-color-text-default',
     '--sky-theme-color-background-danger',
