@@ -1,6 +1,7 @@
 import { Token, TransformedTokens } from 'style-dictionary';
 
 import { PublicApiTokenGroup } from '../../types/public-api-token-group.js';
+import { DemoMetadata } from '../../types/demo-metadata.js';
 import { PublicApiToken } from '../../types/public-api-token.js';
 import { PublicApiTokens } from '../../types/public-api-tokens.js';
 
@@ -12,6 +13,7 @@ interface BlackbaudDocsExtensions {
   deprecatedCustomProperties?: string[];
   obsoleteCustomProperties?: string[];
   intendedCssProperty?: string;
+  demoMetadata?: DemoMetadata;
 }
 
 export function buildPublicApiGroups(
@@ -59,6 +61,10 @@ export function buildPublicApiGroups(
 
     if (tokenExt.intendedCssProperty) {
       tokenEntry.intendedCssProperty = tokenExt.intendedCssProperty;
+    }
+
+    if (tokenExt.demoMetadata) {
+      tokenEntry.demoMetadata = tokenExt.demoMetadata;
     }
 
     // Tokens with no group ancestry go to the top-level tokens array.

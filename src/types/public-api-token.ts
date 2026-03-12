@@ -1,3 +1,5 @@
+import { DemoMetadata } from './demo-metadata.js';
+
 export interface PublicApiToken {
   name: string;
   customProperty?: string;
@@ -5,4 +7,5 @@ export interface PublicApiToken {
   deprecatedCustomProperties?: string[];
   obsoleteCustomProperties?: string[];
   intendedCssProperty?: string;
+  demoMetadata?: DemoMetadata;
 }

@@ -156,6 +156,27 @@ describe('buildPublicApiGroups', () => {
     expect(result.tokens![0].intendedCssProperty).toBe('color');
   });
 
+  it('should include demoMetadata when present', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-text-default',
+      path: ['theme', 'color', 'text', 'default'],
+      docsExt: {
+        name: 'Default Text',
+        demoMetadata: { type: 'text', background: 'dark', color: '#fff', text: 'Hello' },
+      },
+    });
+
+    const tree = buildTree([t]);
+    const result = buildPublicApiGroups([t], tree);
+
+    expect(result.tokens![0].demoMetadata).toEqual({
+      type: 'text',
+      background: 'dark',
+      color: '#fff',
+      text: 'Hello',
+    });
+  });
+
   it('should nest tokens under groups from ancestor extensions', () => {
     const t = mockToken({
       name: 'sky-theme-color-text-default',

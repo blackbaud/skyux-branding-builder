@@ -1,3 +1,5 @@
+import { DemoMetadata } from './demo-metadata.js';
+
 export interface PublicApiStyle {
   name: string;
   className?: string;
@@ -7,4 +9,5 @@ export interface PublicApiStyle {
   deprecatedClassNames?: string[];
   obsoleteClassNames?: string[];
   excludeFromDocs?: boolean;
+  demoMetadata?: DemoMetadata;
 }
