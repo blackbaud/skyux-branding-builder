@@ -5,7 +5,7 @@ import type { PublicApiTokens } from '../../types/public-api-tokens.js';
 
 import {
   buildPublicApiGroups,
-  collectPublicTokenCssProperties,
+  collectPublicTokenCustomProperties,
   mergePublicApiResults,
 } from './public-api-tokens-utils.mjs';
 
@@ -447,7 +447,7 @@ describe('mergePublicApiResults', () => {
 
 });
 
-describe('collectPublicTokenCssProperties', () => {
+describe('collectPublicTokenCustomProperties', () => {
   it('should collect top-level token custom properties', () => {
     const api: PublicApiTokens = {
       tokens: [
@@ -456,7 +456,7 @@ describe('collectPublicTokenCssProperties', () => {
       ],
     };
 
-    const result = collectPublicTokenCssProperties(api);
+    const result = collectPublicTokenCustomProperties(api);
 
     expect(result).toEqual(new Set(['--a', '--b']));
   });
@@ -477,13 +477,13 @@ describe('collectPublicTokenCssProperties', () => {
       ],
     };
 
-    const result = collectPublicTokenCssProperties(api);
+    const result = collectPublicTokenCustomProperties(api);
 
     expect(result).toEqual(new Set(['--color-a', '--color-text-b']));
   });
 
   it('should return an empty set for empty input', () => {
-    const result = collectPublicTokenCssProperties({});
+    const result = collectPublicTokenCustomProperties({});
     expect(result.size).toBe(0);
   });
 
@@ -493,7 +493,7 @@ describe('collectPublicTokenCssProperties', () => {
       tokens: [{ name: 'A', customProperty: '--a' }],
     };
 
-    const result = collectPublicTokenCssProperties(api, existing);
+    const result = collectPublicTokenCustomProperties(api, existing);
 
     expect(result).toBe(existing);
     expect(result).toEqual(new Set(['--existing', '--a']));
@@ -507,7 +507,7 @@ describe('collectPublicTokenCssProperties', () => {
       ],
     };
 
-    const result = collectPublicTokenCssProperties(api);
+    const result = collectPublicTokenCustomProperties(api);
 
     expect(result).toEqual(new Set(['--a']));
   });
@@ -525,7 +525,7 @@ describe('collectPublicTokenCssProperties', () => {
       ],
     };
 
-    const result = collectPublicTokenCssProperties(api);
+    const result = collectPublicTokenCustomProperties(api);
 
     expect(result).toEqual(new Set(['--color-a']));
   });

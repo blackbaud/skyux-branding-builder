@@ -121,7 +121,7 @@ export function mergePublicApiResults(
   }
 }
 
-export function collectPublicTokenCssProperties(
+export function collectPublicTokenCustomProperties(
   api: PublicApiTokens,
   result = new Set<string>(),
 ): Set<string> {
@@ -134,7 +134,7 @@ export function collectPublicTokenCssProperties(
   }
   if (api.groups) {
     for (const group of api.groups) {
-      collectGroupCssProperties(group, result);
+      collectGroupCustomProperties(group, result);
     }
   }
   return result;
@@ -176,7 +176,7 @@ function mergePublicApiGroupArrays(
   }
 }
 
-function collectGroupCssProperties(
+function collectGroupCustomProperties(
   group: PublicApiTokenGroup,
   result: Set<string>,
 ): void {
@@ -189,7 +189,7 @@ function collectGroupCssProperties(
   }
   if (group.groups) {
     for (const subgroup of group.groups) {
-      collectGroupCssProperties(subgroup, result);
+      collectGroupCustomProperties(subgroup, result);
     }
   }
 }

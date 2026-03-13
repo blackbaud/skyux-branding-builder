@@ -13,7 +13,7 @@ import { SkyTokenOptions } from '../types/sky-token-options.js';
 import { fixAssetsUrlValue } from './shared/assets-utils.mjs';
 import {
   buildPublicApiGroups,
-  collectPublicTokenCssProperties,
+  collectPublicTokenCustomProperties,
   mergePublicApiResults,
 } from './shared/public-api-tokens-utils.mjs';
 import {
@@ -115,7 +115,7 @@ async function generateDictionaryFiles(
         const knownCssProperties = new Set<string>();
         for (const file of publicTokenJsonFiles) {
           const parsed = JSON.parse(file.output as string) as PublicApiTokens;
-          collectPublicTokenCssProperties(parsed, knownCssProperties);
+          collectPublicTokenCustomProperties(parsed, knownCssProperties);
         }
 
         const classResults = await Promise.all(
