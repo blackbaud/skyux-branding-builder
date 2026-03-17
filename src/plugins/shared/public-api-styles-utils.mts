@@ -103,6 +103,7 @@ function mergePublicApiStyleGroupArrays(
       if (srcGroup.description && !existing.description) {
         existing.description = srcGroup.description;
       }
+      existing.imageToken ??= srcGroup.imageToken;
       if (srcGroup.styles) {
         existing.styles ??= [];
         mergeStyleArrays(existing.styles, srcGroup.styles);
@@ -173,7 +174,7 @@ function walkGroupCssProperties(
 }
 
 function extractCustomPropertyReferences(value: string): string[] {
-  return [...value.matchAll(/var\((--[^,)]+)/g)].map((m) => m[1].trim());
+  return [...value.matchAll(/var\(\s*(--[^,)]+)/g)].map((m) => m[1].trim());
 }
 
 function stableStyleKey(style: PublicApiStyle): string {

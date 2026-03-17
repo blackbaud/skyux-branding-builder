@@ -206,10 +206,14 @@ function collectGroupCustomProperties(
 }
 
 function stableTokenKey(token: PublicApiToken): string {
-  return (
-    token.customProperty ??
-    token.deprecatedCustomProperties?.sort().join(',') ??
-    token.obsoleteCustomProperties?.sort().join(',') ??
-    token.name
-  );
+  if (token.customProperty) {
+    return token.customProperty;
+  }
+  const dep = token.deprecatedCustomProperties
+    ? [...token.deprecatedCustomProperties].sort().join('|')
+    : '';
+  const obs = token.obsoleteCustomProperties
+    ? [...token.obsoleteCustomProperties].sort().join('|')
+    : '';
+  return `${dep}::${obs}::${token.name}`;
 }

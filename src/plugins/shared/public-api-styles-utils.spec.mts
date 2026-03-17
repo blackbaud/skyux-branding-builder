@@ -496,6 +496,21 @@ describe('validatePublicStylesCssProperties', () => {
       validatePublicStylesCssProperties(input, knownProps, 'test-set');
     }).not.toThrow('is not defined in publicTokens');
   });
+
+  it('should recognise var() references with spaces after the opening parenthesis', () => {
+    const input: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          className: 'sky-theme-text-default',
+          properties: { color: 'var( --sky-theme-color-text-default )' },
+        }),
+      ],
+    };
+
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).not.toThrow();
+  });
 });
 
 describe('mergePublicApiStylesResults', () => {
@@ -832,5 +847,31 @@ describe('mergePublicApiStylesResults', () => {
 
     expect(target.groups![0].styles).toHaveLength(1);
     expect(target.groups![0].styles![0].className).toBe('sky-theme-xs');
+  });
+
+  it('should fill in imageToken when target group has none', () => {
+    const target: PublicApiStyles = {
+      groups: [{ name: 'Colors' }],
+    };
+    const source: PublicApiStyles = {
+      groups: [{ name: 'Colors', imageToken: '--sky-theme-color-preview' }],
+    };
+
+    mergePublicApiStylesResults(target, source);
+
+    expect(target.groups![0].imageToken).toBe('--sky-theme-color-preview');
+  });
+
+  it('should not overwrite existing imageToken', () => {
+    const target: PublicApiStyles = {
+      groups: [{ name: 'Colors', imageToken: '--sky-theme-color-original' }],
+    };
+    const source: PublicApiStyles = {
+      groups: [{ name: 'Colors', imageToken: '--sky-theme-color-replacement' }],
+    };
+
+    mergePublicApiStylesResults(target, source);
+
+    expect(target.groups![0].imageToken).toBe('--sky-theme-color-original');
   });
 });

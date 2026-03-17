@@ -5,7 +5,7 @@ export type { ReferenceTokenSet } from './src/types/reference-token-set.ts';
 export type { TokenConfig } from './src/types/token-config.ts';
 export type { TokenSet } from './src/types/token-set.ts';
 export type { PublicTokenSet } from './src/types/public-token-set.ts';
-export type { PublicStyleSet as PublicClassSet } from './src/types/public-class-set.ts';
+export type { PublicStyleSet as PublicClassSet } from './src/types/public-style-set.js';
 export type { PublicApiTokens } from './src/types/public-api-tokens.js';
 export type { PublicApiTokenGroup } from './src/types/public-api-token-group.js';
 export type { PublicApiToken } from './src/types/public-api-token.ts';

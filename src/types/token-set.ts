@@ -1,4 +1,4 @@
-import { PublicStyleSet } from './public-class-set.js';
+import { PublicStyleSet } from './public-style-set.js';
 import { PublicTokenSet } from './public-token-set.js';
 import { ReferenceTokenSet } from './reference-token-set.js';
 
