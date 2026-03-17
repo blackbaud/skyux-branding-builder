@@ -127,10 +127,10 @@ async function generateDictionaryFiles(
 
       if (tokenSet.publicStyles?.length) {
         // Build the set of known CSS custom properties from this token set's public tokens.
-        const knownCssProperties = new Set<string>();
+        const knownCustomProperties = new Set<string>();
         for (const file of publicTokenJsonFiles) {
           const parsed = JSON.parse(file.output as string) as PublicApiTokens;
-          collectPublicTokenCustomProperties(parsed, knownCssProperties);
+          collectPublicTokenCustomProperties(parsed, knownCustomProperties);
         }
 
         const classResults = await Promise.all(
@@ -142,7 +142,7 @@ async function generateDictionaryFiles(
             const publicApiStyles = JSON.parse(json) as PublicApiStyles;
             validatePublicStylesCssProperties(
               publicApiStyles,
-              knownCssProperties,
+              knownCustomProperties,
               publicStyleSet.name,
             );
             return {
