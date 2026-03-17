@@ -198,10 +198,10 @@ function mergeStyleArrays(
   source: PublicApiStyle[],
 ): void {
   for (const style of source) {
-    if (style.excludeFromDocs) {
-      continue;
-    }
-    if (!target.some((c) => stableStyleKey(c) === stableStyleKey(style))) {
+    if (
+      !style.excludeFromDocs &&
+      !target.some((c) => stableStyleKey(c) === stableStyleKey(style))
+    ) {
       target.push(style);
     }
   }

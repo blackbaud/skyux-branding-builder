@@ -40,7 +40,7 @@ async function generateDictionaryFiles(
   publicClassFiles: GeneratedFile[];
   publicClassJsonFiles: GeneratedFile[];
 }> {
-  const sd = new StyleDictionary(undefined);
+  const sd = new StyleDictionary({ log: { verbosity: 'verbose' } });
   const rootPath = tokenConfig.rootPath || 'src/tokens/';
 
   const results = await Promise.all(
