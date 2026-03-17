@@ -20,20 +20,21 @@ const DEFAULT_SD_CONFIG: SkyStyleDictionaryConfig = {
         showFileHeader: false,
       },
       buildPath: `dist/`,
-    }
+    },
   },
 };
 
 export function isUrlToken(token: Token): boolean {
   return (
-    token.$extensions?.['com.blackbaud.developer.sky-token-format'] === 'url'
+    (token.$extensions as Record<string, unknown>)?.[
+      'com.blackbaud.developer.sky-token-format'
+    ] === 'url'
   );
 }
 
 export function getMediaQueryMinWidth(breakpoint: Breakpoint): string {
   switch (breakpoint) {
     case 'xs':
-    default:
       return '0px';
     case 's':
       return '768px';
@@ -41,6 +42,8 @@ export function getMediaQueryMinWidth(breakpoint: Breakpoint): string {
       return '992px';
     case 'l':
       return '1200px';
+    default:
+      return '0px';
   }
 }
 

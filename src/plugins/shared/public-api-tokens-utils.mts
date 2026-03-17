@@ -30,9 +30,13 @@ export function buildPublicApiGroups(
     let current: TransformedTokens = tokenTree;
 
     for (const segment of token.path) {
-      current = current[segment];
+      current = (current as Record<string, TransformedTokens>)[
+        segment as string
+      ];
       const node = current as Token;
-      const nodeExt = getDocsExt(node.$extensions);
+      const nodeExt = getDocsExt(
+        node.$extensions as Record<string, unknown> | undefined,
+      );
       if (nodeExt.groupName) {
         groupPath.push({
           groupName: nodeExt.groupName,
@@ -41,7 +45,9 @@ export function buildPublicApiGroups(
       }
     }
 
-    const tokenExt = getDocsExt(token.$extensions);
+    const tokenExt = getDocsExt(
+      token.$extensions as Record<string, unknown> | undefined,
+    );
     const tokenEntry: PublicApiToken = {
       name: tokenExt.name ?? token.name ?? '',
       customProperty: `--${token.name}`,
@@ -52,7 +58,8 @@ export function buildPublicApiGroups(
     }
 
     if (tokenExt.deprecatedCustomProperties) {
-      tokenEntry.deprecatedCustomProperties = tokenExt.deprecatedCustomProperties;
+      tokenEntry.deprecatedCustomProperties =
+        tokenExt.deprecatedCustomProperties;
     }
 
     if (tokenExt.obsoleteCustomProperties) {
@@ -110,7 +117,9 @@ export function mergePublicApiResults(
   if (source.tokens) {
     target.tokens ??= [];
     for (const token of source.tokens) {
-      if (!target.tokens.some((t) => stableTokenKey(t) === stableTokenKey(token))) {
+      if (
+        !target.tokens.some((t) => stableTokenKey(t) === stableTokenKey(token))
+      ) {
         target.tokens.push(token);
       }
     }
@@ -160,7 +169,9 @@ function mergePublicApiGroupArrays(
         existing.tokens ??= [];
         for (const token of srcGroup.tokens) {
           if (
-            !existing.tokens.some((t) => stableTokenKey(t) === stableTokenKey(token))
+            !existing.tokens.some(
+              (t) => stableTokenKey(t) === stableTokenKey(token),
+            )
           ) {
             existing.tokens.push(token);
           }
@@ -195,5 +206,10 @@ function collectGroupCustomProperties(
 }
 
 function stableTokenKey(token: PublicApiToken): string {
-  return token.customProperty ?? token.deprecatedCustomProperties?.sort().join(',') ?? token.obsoleteCustomProperties?.sort().join(',') ?? token.name;
+  return (
+    token.customProperty ??
+    token.deprecatedCustomProperties?.sort().join(',') ??
+    token.obsoleteCustomProperties?.sort().join(',') ??
+    token.name
+  );
 }

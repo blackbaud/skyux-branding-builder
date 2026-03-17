@@ -25,7 +25,8 @@ describe('buildStyleDictionaryPlugin', () => {
   async function validate(
     tokenConfig: TokenConfig,
     expectedEmittedFiles: { fileName: string; source: string }[],
-    assetsCssMock: (basePath?: string) => Promise<string> = async () => '',
+    assetsCssMock: (basePath?: string) => Promise<string> = () =>
+      Promise.resolve(''),
     expectedEmittedPublicApiFile?: { source: string },
     expectedEmittedPublicApiJsonFile?: { source: string },
     expectedEmittedPublicApiStylesJsonFile?: { source: string },
@@ -38,12 +39,12 @@ describe('buildStyleDictionaryPlugin', () => {
     await callGenerateBundle(plugin, emitFileSpy);
 
     // Each token set should generate both assets/scss/ and bundles/ files
-    expect(emitFileSpy).toHaveBeenCalledTimes(
-      expectedEmittedFiles.length * 2
-        + (expectedEmittedPublicApiFile ? 1 : 0)
-        + (expectedEmittedPublicApiJsonFile ? 1 : 0)
-        + (expectedEmittedPublicApiStylesJsonFile ? 1 : 0),
-    );
+    const baseCalls = expectedEmittedFiles.length * 2;
+    const extraCalls =
+      (expectedEmittedPublicApiFile ? 1 : 0) +
+      (expectedEmittedPublicApiJsonFile ? 1 : 0) +
+      (expectedEmittedPublicApiStylesJsonFile ? 1 : 0);
+    expect(emitFileSpy).toHaveBeenCalledTimes(baseCalls + extraCalls);
 
     for (const expectedFile of expectedEmittedFiles) {
       // Check for assets/scss/ file
@@ -249,8 +250,7 @@ describe('buildStyleDictionaryPlugin', () => {
                     {
                       name: 'Danger Background',
                       customProperty: '--sky-theme-color-background-danger',
-                      description:
-                        'The background color for danger elements.',
+                      description: 'The background color for danger elements.',
                     },
                   ],
                 },
@@ -695,10 +695,11 @@ describe('buildStyleDictionaryPlugin', () => {
       },
     ];
 
-    const assetsCssMock = async (basePath?: string) => `@font-face {
+    const assetsCssMock = (basePath?: string) =>
+      Promise.resolve(`@font-face {
   font-family: Test;
   src: url('${basePath}test.tff');
-}`;
+}`);
 
     await validate(tokenConfig, expectedEmittedFiles, assetsCssMock);
   });
@@ -763,7 +764,8 @@ describe('buildStyleDictionaryPlugin', () => {
           groups: [
             {
               name: 'Margin top',
-              description: 'Use these classes to add a top margin to an element.',
+              description:
+                'Use these classes to add a top margin to an element.',
               styles: [
                 {
                   name: 'Top x-small',
@@ -1137,7 +1139,8 @@ describe('buildStyleDictionaryPlugin', () => {
           groups: [
             {
               name: 'Margin top',
-              description: 'Use these classes to add a top margin to an element.',
+              description:
+                'Use these classes to add a top margin to an element.',
               styles: [
                 {
                   name: 'Top x-small',

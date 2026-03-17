@@ -12,14 +12,12 @@ import {
 const DOCS_NS = 'com.blackbaud.developer.docs';
 
 /** Minimal token stub that satisfies the fields read by the utils. */
-function mockToken(
-  overrides: {
-    name: string;
-    path: string[];
-    $description?: string;
-    docsExt?: Record<string, unknown>;
-  },
-): Token {
+function mockToken(overrides: {
+  name: string;
+  path: string[];
+  $description?: string;
+  docsExt?: Record<string, unknown>;
+}): Token {
   return {
     name: overrides.name,
     path: overrides.path,
@@ -121,7 +119,9 @@ describe('buildPublicApiGroups', () => {
     const tree = buildTree([t]);
     const result = buildPublicApiGroups([t], tree);
 
-    expect(result.tokens![0].deprecatedCustomProperties).toEqual(['--old-text-color']);
+    expect(result.tokens![0].deprecatedCustomProperties).toEqual([
+      '--old-text-color',
+    ]);
   });
 
   it('should include obsoleteCustomProperties when present', () => {
@@ -137,7 +137,9 @@ describe('buildPublicApiGroups', () => {
     const tree = buildTree([t]);
     const result = buildPublicApiGroups([t], tree);
 
-    expect(result.tokens![0].obsoleteCustomProperties).toEqual(['--removed-text-color']);
+    expect(result.tokens![0].obsoleteCustomProperties).toEqual([
+      '--removed-text-color',
+    ]);
   });
 
   it('should include cssProperty when present', () => {
@@ -162,7 +164,12 @@ describe('buildPublicApiGroups', () => {
       path: ['theme', 'color', 'text', 'default'],
       docsExt: {
         name: 'Default Text',
-        demoMetadata: { type: 'text', background: 'dark', color: '#fff', text: 'Hello' },
+        demoMetadata: {
+          type: 'text',
+          background: 'dark',
+          color: '#fff',
+          text: 'Hello',
+        },
       },
     });
 
@@ -386,7 +393,9 @@ describe('mergePublicApiResults', () => {
 
   it('should not deduplicate distinct deprecated-only tokens with no customProperty', () => {
     const target: PublicApiTokens = {
-      tokens: [{ name: 'Deprecated A', deprecatedCustomProperties: ['--old-a'] }],
+      tokens: [
+        { name: 'Deprecated A', deprecatedCustomProperties: ['--old-a'] },
+      ],
     };
     const source: PublicApiTokens = {
       tokens: [
@@ -408,10 +417,14 @@ describe('mergePublicApiResults', () => {
 
   it('should not deduplicate entries with the same name but different deprecatedCustomProperties', () => {
     const target: PublicApiTokens = {
-      tokens: [{ name: 'Old Token', deprecatedCustomProperties: ['--old-color'] }],
+      tokens: [
+        { name: 'Old Token', deprecatedCustomProperties: ['--old-color'] },
+      ],
     };
     const source: PublicApiTokens = {
-      tokens: [{ name: 'Old Token', deprecatedCustomProperties: ['--old-spacing'] }],
+      tokens: [
+        { name: 'Old Token', deprecatedCustomProperties: ['--old-spacing'] },
+      ],
     };
 
     mergePublicApiResults(target, source);
@@ -426,7 +439,9 @@ describe('mergePublicApiResults', () => {
 
   it('should not deduplicate distinct obsolete-only tokens with no customProperty', () => {
     const target: PublicApiTokens = {
-      tokens: [{ name: 'Obsolete A', obsoleteCustomProperties: ['--removed-a'] }],
+      tokens: [
+        { name: 'Obsolete A', obsoleteCustomProperties: ['--removed-a'] },
+      ],
     };
     const source: PublicApiTokens = {
       tokens: [
@@ -444,7 +459,6 @@ describe('mergePublicApiResults', () => {
       ['--removed-b'],
     ]);
   });
-
 });
 
 describe('collectPublicTokenCustomProperties', () => {
@@ -519,7 +533,10 @@ describe('collectPublicTokenCustomProperties', () => {
           groupName: 'Colors',
           tokens: [
             { name: 'A', customProperty: '--color-a' },
-            { name: 'Deprecated Color', deprecatedCustomProperties: ['--old-color'] },
+            {
+              name: 'Deprecated Color',
+              deprecatedCustomProperties: ['--old-color'],
+            },
           ],
         },
       ],

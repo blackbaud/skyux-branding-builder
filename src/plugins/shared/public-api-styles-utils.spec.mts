@@ -154,7 +154,10 @@ describe('generatePublicStylesCss', () => {
         {
           name: 'Spacing',
           styles: [
-            makeStyle({ name: 'Old Spacing', deprecatedClassNames: ['sky-old-spacing'] }),
+            makeStyle({
+              name: 'Old Spacing',
+              deprecatedClassNames: ['sky-old-spacing'],
+            }),
             makeStyle({
               className: 'sky-theme-margin-top-xs',
               properties: { 'margin-top': '0.5rem' },
@@ -293,9 +296,9 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).not.toThrow();
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).not.toThrow();
   });
 
   it('should throw for unknown custom property references', () => {
@@ -308,9 +311,9 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow('--sky-theme-color-nonexistent');
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow('--sky-theme-color-nonexistent');
   });
 
   it('should include the set name in the error message', () => {
@@ -323,9 +326,9 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'my-set'),
-    ).toThrow('"my-set"');
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'my-set');
+    }).toThrow('"my-set"');
   });
 
   it('should validate references inside groups', () => {
@@ -343,9 +346,9 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow('--unknown-prop');
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow('--unknown-prop');
   });
 
   it('should validate references in nested subgroups', () => {
@@ -368,9 +371,9 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow('--deeply-unknown');
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow('--deeply-unknown');
   });
 
   it('should not throw for literal values without var()', () => {
@@ -383,9 +386,9 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).not.toThrow();
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).not.toThrow();
   });
 
   it('should report multiple errors at once', () => {
@@ -402,9 +405,9 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow(/--missing-1[\s\S]*--missing-2/);
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow(/--missing-1[\s\S]*--missing-2/);
   });
 
   it('should use deprecatedClassNames as the label when className is absent', () => {
@@ -418,9 +421,9 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow('sky-old-class: has "properties" but no "className"');
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow('sky-old-class: has "properties" but no "className"');
   });
 
   it('should validate var() references for selectors entries', () => {
@@ -434,9 +437,9 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow('p: "--unknown-prop" is not defined in publicTokens');
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow('p: "--unknown-prop" is not defined in publicTokens');
   });
 
   it('should use obsoleteClassNames as the label when className and deprecatedClassNames are absent', () => {
@@ -450,22 +453,26 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow('sky-removed-class: has "properties" but no "className"');
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow('sky-removed-class: has "properties" but no "className"');
   });
 
   it('should not throw for docs-only entries with no properties', () => {
     const input: PublicApiStyles = {
       styles: [
-        makeStyle({ name: 'Old Class', deprecatedClassNames: ['sky-old-class'], obsoleteClassNames: ['sky-removed-class'] }),
+        makeStyle({
+          name: 'Old Class',
+          deprecatedClassNames: ['sky-old-class'],
+          obsoleteClassNames: ['sky-removed-class'],
+        }),
         makeStyle({ name: 'Button', selectors: ['button'] }),
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).not.toThrow();
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).not.toThrow();
   });
 
   it('should not validate var() references for entries without a className', () => {
@@ -481,13 +488,13 @@ describe('validatePublicStylesCssProperties', () => {
       ],
     };
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).toThrow('has "properties" but no "className"');
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow('has "properties" but no "className"');
 
-    expect(() =>
-      validatePublicStylesCssProperties(input, knownProps, 'test-set'),
-    ).not.toThrow('is not defined in publicTokens');
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).not.toThrow('is not defined in publicTokens');
   });
 });
 
@@ -495,13 +502,22 @@ describe('mergePublicApiStylesResults', () => {
   it('should merge top-level classes without duplicates', () => {
     const target: PublicApiStyles = {
       styles: [
-        makeStyle({ className: 'sky-theme-a', properties: { display: 'block' } }),
+        makeStyle({
+          className: 'sky-theme-a',
+          properties: { display: 'block' },
+        }),
       ],
     };
     const source: PublicApiStyles = {
       styles: [
-        makeStyle({ className: 'sky-theme-a', properties: { display: 'none' } }),
-        makeStyle({ className: 'sky-theme-b', properties: { display: 'flex' } }),
+        makeStyle({
+          className: 'sky-theme-a',
+          properties: { display: 'none' },
+        }),
+        makeStyle({
+          className: 'sky-theme-b',
+          properties: { display: 'flex' },
+        }),
       ],
     };
 
@@ -607,14 +623,23 @@ describe('mergePublicApiStylesResults', () => {
   it('should not deduplicate distinct deprecated-only classes with no className', () => {
     const target: PublicApiStyles = {
       styles: [
-        makeStyle({ name: 'Deprecated A', deprecatedClassNames: ['sky-old-a'] }),
+        makeStyle({
+          name: 'Deprecated A',
+          deprecatedClassNames: ['sky-old-a'],
+        }),
       ],
     };
     const source: PublicApiStyles = {
       styles: [
         // Different deprecatedClassNames → distinct stable key despite same name as above.
-        makeStyle({ name: 'Deprecated A', deprecatedClassNames: ['sky-old-a-dup'] }),
-        makeStyle({ name: 'Deprecated B', deprecatedClassNames: ['sky-old-b'] }),
+        makeStyle({
+          name: 'Deprecated A',
+          deprecatedClassNames: ['sky-old-a-dup'],
+        }),
+        makeStyle({
+          name: 'Deprecated B',
+          deprecatedClassNames: ['sky-old-b'],
+        }),
       ],
     };
 
@@ -632,12 +657,18 @@ describe('mergePublicApiStylesResults', () => {
   it('should not deduplicate entries with the same name but different deprecatedClassNames', () => {
     const target: PublicApiStyles = {
       styles: [
-        makeStyle({ name: 'Old Style', deprecatedClassNames: ['sky-old-color'] }),
+        makeStyle({
+          name: 'Old Style',
+          deprecatedClassNames: ['sky-old-color'],
+        }),
       ],
     };
     const source: PublicApiStyles = {
       styles: [
-        makeStyle({ name: 'Old Style', deprecatedClassNames: ['sky-old-spacing'] }),
+        makeStyle({
+          name: 'Old Style',
+          deprecatedClassNames: ['sky-old-spacing'],
+        }),
       ],
     };
 
@@ -654,13 +685,22 @@ describe('mergePublicApiStylesResults', () => {
   it('should not deduplicate distinct obsolete-only classes with no className', () => {
     const target: PublicApiStyles = {
       styles: [
-        makeStyle({ name: 'Obsolete A', obsoleteClassNames: ['sky-removed-a'] }),
+        makeStyle({
+          name: 'Obsolete A',
+          obsoleteClassNames: ['sky-removed-a'],
+        }),
       ],
     };
     const source: PublicApiStyles = {
       styles: [
-        makeStyle({ name: 'Obsolete A', obsoleteClassNames: ['sky-removed-a-dup'] }),
-        makeStyle({ name: 'Obsolete B', obsoleteClassNames: ['sky-removed-b'] }),
+        makeStyle({
+          name: 'Obsolete A',
+          obsoleteClassNames: ['sky-removed-a-dup'],
+        }),
+        makeStyle({
+          name: 'Obsolete B',
+          obsoleteClassNames: ['sky-removed-b'],
+        }),
       ],
     };
 
@@ -673,7 +713,6 @@ describe('mergePublicApiStylesResults', () => {
       ['sky-removed-b'],
     ]);
   });
-
 
   it('should not deduplicate entries with the same name but different selectors', () => {
     const target: PublicApiStyles = {
@@ -692,7 +731,9 @@ describe('mergePublicApiStylesResults', () => {
 
   it('should not deduplicate className entry and selectors entry sharing the same value', () => {
     const target: PublicApiStyles = {
-      styles: [makeStyle({ className: 'button', properties: { display: 'inline' } })],
+      styles: [
+        makeStyle({ className: 'button', properties: { display: 'inline' } }),
+      ],
     };
     const source: PublicApiStyles = {
       styles: [makeStyle({ name: 'Button element', selectors: ['button'] })],
@@ -748,8 +789,15 @@ describe('mergePublicApiStylesResults', () => {
     const target: PublicApiStyles = {};
     const source: PublicApiStyles = {
       styles: [
-        makeStyle({ className: 'sky-theme-visible', properties: { display: 'block' } }),
-        makeStyle({ className: 'sky-theme-hidden', properties: { display: 'none' }, excludeFromDocs: true }),
+        makeStyle({
+          className: 'sky-theme-visible',
+          properties: { display: 'block' },
+        }),
+        makeStyle({
+          className: 'sky-theme-hidden',
+          properties: { display: 'none' },
+          excludeFromDocs: true,
+        }),
       ],
     };
 
@@ -766,8 +814,15 @@ describe('mergePublicApiStylesResults', () => {
         {
           name: 'Spacing',
           styles: [
-            makeStyle({ className: 'sky-theme-xs', properties: { 'margin-top': '0.5rem' } }),
-            makeStyle({ className: 'sky-theme-internal', properties: { 'margin-top': '1rem' }, excludeFromDocs: true }),
+            makeStyle({
+              className: 'sky-theme-xs',
+              properties: { 'margin-top': '0.5rem' },
+            }),
+            makeStyle({
+              className: 'sky-theme-internal',
+              properties: { 'margin-top': '1rem' },
+              excludeFromDocs: true,
+            }),
           ],
         },
       ],

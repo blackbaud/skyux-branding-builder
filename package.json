@@ -9,6 +9,8 @@
   },
   "scripts": {
     "test": "vitest run",
+    "lint": "eslint",
+    "format": "prettier --write .",
     "dev": "vite",
     "build": "npm run clean && tsc --project tsconfig.build.json",
     "build:vite": "vite build",

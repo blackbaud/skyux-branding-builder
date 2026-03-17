@@ -47,7 +47,7 @@ export async function generateAssetsCss(
 
     // Read and parse assets.json
     const assetsContent = await readFile(assetsJsonPath, 'utf-8');
-    const assetsConfig: AssetsConfig = JSON.parse(assetsContent);
+    const assetsConfig = JSON.parse(assetsContent) as AssetsConfig;
 
     if (!assetsConfig.fonts || assetsConfig.fonts.length === 0) {
       console.warn('No fonts found in assets.json');

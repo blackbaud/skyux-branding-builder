@@ -72,7 +72,9 @@ describe('build-assets-manifest-plugin', () => {
       const spy = vi.spyOn(console, method).mockImplementation(() => {});
       return {
         spy,
-        restore: () => spy.mockRestore(),
+        restore: () => {
+          spy.mockRestore();
+        },
       };
     }
 
@@ -106,7 +108,7 @@ describe('build-assets-manifest-plugin', () => {
     async function testPluginWithAssetsConfig(
       assetsConfig: AssetsConfig,
       mockReturnValues: string | string[],
-      expectedCalls?: Array<{ basePath: string; url: string }>,
+      expectedCalls?: { basePath: string; url: string }[],
     ) {
       const { plugin, emitFileSpy, mockFixAssetsUrl } = createTestSetup();
       const assetsJson = JSON.stringify(assetsConfig);

@@ -60,12 +60,7 @@ export function mergePublicApiStylesResults(
 ): void {
   if (source.styles) {
     target.styles ??= [];
-    for (const style of source.styles) {
-      if (style.excludeFromDocs) continue;
-      if (!target.styles.some((c) => stableStyleKey(c) === stableStyleKey(style))) {
-        target.styles.push(style);
-      }
-    }
+    mergeStyleArrays(target.styles, source.styles);
   }
   if (source.groups) {
     target.groups ??= [];
@@ -110,14 +105,7 @@ function mergePublicApiStyleGroupArrays(
       }
       if (srcGroup.styles) {
         existing.styles ??= [];
-        for (const style of srcGroup.styles) {
-          if (style.excludeFromDocs) continue;
-          if (
-            !existing.styles.some((c: PublicApiStyle) => stableStyleKey(c) === stableStyleKey(style))
-          ) {
-            existing.styles.push(style);
-          }
-        }
+        mergeStyleArrays(existing.styles, srcGroup.styles);
       }
       if (srcGroup.groups) {
         existing.groups ??= [];
@@ -126,7 +114,9 @@ function mergePublicApiStyleGroupArrays(
     } else {
       const newGroup = { ...srcGroup };
       if (newGroup.styles) {
-        newGroup.styles = newGroup.styles.filter((style) => !style.excludeFromDocs);
+        const filteredStyles: PublicApiStyle[] = [];
+        mergeStyleArrays(filteredStyles, newGroup.styles);
+        newGroup.styles = filteredStyles;
       }
       if (newGroup.groups) {
         const filteredGroups: PublicApiStyleGroup[] = [];
@@ -156,7 +146,9 @@ function checkStyleCssProperties(
     return;
   }
 
-  if (!style.properties) return;
+  if (!style.properties) {
+    return;
+  }
   const label = hasClassName ? `.${style.className}` : styleLabel(style);
   for (const value of Object.values(style.properties)) {
     for (const ref of extractCustomPropertyReferences(value)) {
@@ -185,13 +177,41 @@ function extractCustomPropertyReferences(value: string): string[] {
 }
 
 function stableStyleKey(style: PublicApiStyle): string {
-  if (style.className !== undefined) return `className:${style.className}`;
-  if (style.deprecatedClassNames !== undefined) return `deprecatedClassNames:${[...style.deprecatedClassNames].sort().join(',')}`;
-  if (style.obsoleteClassNames !== undefined) return `obsoleteClassNames:${[...style.obsoleteClassNames].sort().join(',')}`;
-  if (style.selectors !== undefined) return `selectors:${[...style.selectors].sort().join(',')}`;
+  if (style.className !== undefined) {
+    return `className:${style.className}`;
+  }
+  if (style.deprecatedClassNames !== undefined) {
+    return `deprecatedClassNames:${[...style.deprecatedClassNames].sort().join(',')}`;
+  }
+  if (style.obsoleteClassNames !== undefined) {
+    return `obsoleteClassNames:${[...style.obsoleteClassNames].sort().join(',')}`;
+  }
+  if (style.selectors !== undefined) {
+    return `selectors:${[...style.selectors].sort().join(',')}`;
+  }
   return `name:${style.name}`;
 }
 
+function mergeStyleArrays(
+  target: PublicApiStyle[],
+  source: PublicApiStyle[],
+): void {
+  for (const style of source) {
+    if (style.excludeFromDocs) {
+      continue;
+    }
+    if (!target.some((c) => stableStyleKey(c) === stableStyleKey(style))) {
+      target.push(style);
+    }
+  }
+}
+
 function styleLabel(style: PublicApiStyle): string {
-  return style.className ?? style.deprecatedClassNames?.join(', ') ?? style.obsoleteClassNames?.join(', ') ?? style.selectors?.join(', ') ?? style.name;
+  return (
+    style.className ??
+    style.deprecatedClassNames?.join(', ') ??
+    style.obsoleteClassNames?.join(', ') ??
+    style.selectors?.join(', ') ??
+    style.name
+  );
 }

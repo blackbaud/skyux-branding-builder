@@ -72,23 +72,41 @@ describe('getBaseDictionaryConfig', () => {
   };
 
   it('should set source to the tokenSet path prefixed by rootPath', () => {
-    const config = getBaseDictionaryConfig('src/fixtures/', tokenSet, skyOptions);
+    const config = getBaseDictionaryConfig(
+      'src/fixtures/',
+      tokenSet,
+      skyOptions,
+    );
     expect(config.source).toEqual(['src/fixtures/base-rainbow.json']);
   });
 
   it('should set the CSS selector from the tokenSet', () => {
-    const config = getBaseDictionaryConfig('src/fixtures/', tokenSet, skyOptions);
+    const config = getBaseDictionaryConfig(
+      'src/fixtures/',
+      tokenSet,
+      skyOptions,
+    );
     expect(config.platforms.css.options?.selector).toBe('.sky-theme-rainbow');
   });
 
   it('should configure a single CSS file output', () => {
-    const config = getBaseDictionaryConfig('src/fixtures/', tokenSet, skyOptions);
+    const config = getBaseDictionaryConfig(
+      'src/fixtures/',
+      tokenSet,
+      skyOptions,
+    );
     expect(config.platforms.css.files).toHaveLength(1);
-    expect(config.platforms.css.files![0].destination).toBe('rainbow/rainbow.css');
+    expect(config.platforms.css.files![0].destination).toBe(
+      'rainbow/rainbow.css',
+    );
   });
 
   it('should not mutate the config between calls', () => {
-    const config1 = getBaseDictionaryConfig('src/fixtures/', tokenSet, skyOptions);
+    const config1 = getBaseDictionaryConfig(
+      'src/fixtures/',
+      tokenSet,
+      skyOptions,
+    );
     const config2 = getBaseDictionaryConfig('other/', tokenSet, skyOptions);
     expect(config1.source).not.toEqual(config2.source);
   });
@@ -158,9 +176,7 @@ describe('getPublicDictionaryConfig', () => {
     path: 'base-rainbow.json',
     selector: '.sky-theme-rainbow',
     outputPath: 'dist/',
-    referenceTokens: [
-      { name: 'muted-colors', path: 'muted-colors.json' },
-    ],
+    referenceTokens: [{ name: 'muted-colors', path: 'muted-colors.json' }],
   };
 
   const publicTokenSet = {
@@ -188,7 +204,9 @@ describe('getPublicDictionaryConfig', () => {
       publicTokenSet,
       skyOptions,
     );
-    expect(config.platforms.css.options?.skyOptions.showDescriptions).toBe(true);
+    expect(config.platforms.css.options?.skyOptions.showDescriptions).toBe(
+      true,
+    );
   });
 
   it('should configure both CSS and JSON platform outputs', () => {
