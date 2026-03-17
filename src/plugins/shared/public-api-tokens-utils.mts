@@ -1,6 +1,7 @@
 import { Token, TransformedTokens } from 'style-dictionary';
 
 import { PublicApiTokenGroup } from '../../types/public-api-token-group.js';
+import { DemoMetadata } from '../../types/demo-metadata.js';
 import { PublicApiToken } from '../../types/public-api-token.js';
 import { PublicApiTokens } from '../../types/public-api-tokens.js';
 
@@ -9,7 +10,10 @@ const EXTENSIONS_NAMESPACE = 'com.blackbaud.developer.docs';
 interface BlackbaudDocsExtensions {
   groupName?: string;
   name?: string;
-  deprecatedCustomProperty?: string;
+  deprecatedCustomProperties?: string[];
+  obsoleteCustomProperties?: string[];
+  cssProperty?: string;
+  demoMetadata?: DemoMetadata;
 }
 
 export function buildPublicApiGroups(
@@ -26,9 +30,13 @@ export function buildPublicApiGroups(
     let current: TransformedTokens = tokenTree;
 
     for (const segment of token.path) {
-      current = current[segment];
+      current = (current as Record<string, TransformedTokens>)[
+        segment as string
+      ];
       const node = current as Token;
-      const nodeExt = getDocsExt(node.$extensions);
+      const nodeExt = getDocsExt(
+        node.$extensions as Record<string, unknown> | undefined,
+      );
       if (nodeExt.groupName) {
         groupPath.push({
           groupName: nodeExt.groupName,
@@ -37,7 +45,9 @@ export function buildPublicApiGroups(
       }
     }
 
-    const tokenExt = getDocsExt(token.$extensions);
+    const tokenExt = getDocsExt(
+      token.$extensions as Record<string, unknown> | undefined,
+    );
     const tokenEntry: PublicApiToken = {
       name: tokenExt.name ?? token.name ?? '',
       customProperty: `--${token.name}`,
@@ -47,8 +57,21 @@ export function buildPublicApiGroups(
       tokenEntry.description = token.$description;
     }
 
-    if (tokenExt.deprecatedCustomProperty) {
-      tokenEntry.deprecatedCustomProperty = tokenExt.deprecatedCustomProperty;
+    if (tokenExt.deprecatedCustomProperties) {
+      tokenEntry.deprecatedCustomProperties =
+        tokenExt.deprecatedCustomProperties;
+    }
+
+    if (tokenExt.obsoleteCustomProperties) {
+      tokenEntry.obsoleteCustomProperties = tokenExt.obsoleteCustomProperties;
+    }
+
+    if (tokenExt.cssProperty) {
+      tokenEntry.cssProperty = tokenExt.cssProperty;
+    }
+
+    if (tokenExt.demoMetadata) {
+      tokenEntry.demoMetadata = tokenExt.demoMetadata;
     }
 
     // Tokens with no group ancestry go to the top-level tokens array.
@@ -94,7 +117,9 @@ export function mergePublicApiResults(
   if (source.tokens) {
     target.tokens ??= [];
     for (const token of source.tokens) {
-      if (!target.tokens.some((t) => t.customProperty === token.customProperty)) {
+      if (
+        !target.tokens.some((t) => stableTokenKey(t) === stableTokenKey(token))
+      ) {
         target.tokens.push(token);
       }
     }
@@ -105,18 +130,20 @@ export function mergePublicApiResults(
   }
 }
 
-export function collectPublicTokenCssProperties(
+export function collectPublicTokenCustomProperties(
   api: PublicApiTokens,
   result = new Set<string>(),
 ): Set<string> {
   if (api.tokens) {
     for (const token of api.tokens) {
-      result.add(token.customProperty);
+      if (token.customProperty) {
+        result.add(token.customProperty);
+      }
     }
   }
   if (api.groups) {
     for (const group of api.groups) {
-      collectGroupCssProperties(group, result);
+      collectGroupCustomProperties(group, result);
     }
   }
   return result;
@@ -142,7 +169,9 @@ function mergePublicApiGroupArrays(
         existing.tokens ??= [];
         for (const token of srcGroup.tokens) {
           if (
-            !existing.tokens.some((t) => t.customProperty === token.customProperty)
+            !existing.tokens.some(
+              (t) => stableTokenKey(t) === stableTokenKey(token),
+            )
           ) {
             existing.tokens.push(token);
           }
@@ -158,18 +187,33 @@ function mergePublicApiGroupArrays(
   }
 }
 
-function collectGroupCssProperties(
+function collectGroupCustomProperties(
   group: PublicApiTokenGroup,
   result: Set<string>,
 ): void {
   if (group.tokens) {
     for (const token of group.tokens) {
-      result.add(token.customProperty);
+      if (token.customProperty) {
+        result.add(token.customProperty);
+      }
     }
   }
   if (group.groups) {
     for (const subgroup of group.groups) {
-      collectGroupCssProperties(subgroup, result);
+      collectGroupCustomProperties(subgroup, result);
     }
   }
+}
+
+function stableTokenKey(token: PublicApiToken): string {
+  if (token.customProperty) {
+    return token.customProperty;
+  }
+  const dep = token.deprecatedCustomProperties
+    ? [...token.deprecatedCustomProperties].sort().join('|')
+    : '';
+  const obs = token.obsoleteCustomProperties
+    ? [...token.obsoleteCustomProperties].sort().join('|')
+    : '';
+  return `${dep}::${obs}::${token.name}`;
 }

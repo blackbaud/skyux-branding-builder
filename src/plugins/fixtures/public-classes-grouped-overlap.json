@@ -3,7 +3,7 @@
     {
       "name": "Margin top",
       "description": "Use these classes to add a top margin to an element.",
-      "classes": [
+      "styles": [
         {
           "name": "Top x-small",
           "className": "sky-theme-margin-top-xs",

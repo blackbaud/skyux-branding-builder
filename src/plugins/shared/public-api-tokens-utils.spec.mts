@@ -5,21 +5,19 @@ import type { PublicApiTokens } from '../../types/public-api-tokens.js';
 
 import {
   buildPublicApiGroups,
-  collectPublicTokenCssProperties,
+  collectPublicTokenCustomProperties,
   mergePublicApiResults,
 } from './public-api-tokens-utils.mjs';
 
 const DOCS_NS = 'com.blackbaud.developer.docs';
 
 /** Minimal token stub that satisfies the fields read by the utils. */
-function fakeToken(
-  overrides: {
-    name: string;
-    path: string[];
-    $description?: string;
-    docsExt?: Record<string, unknown>;
-  },
-): Token {
+function mockToken(overrides: {
+  name: string;
+  path: string[];
+  $description?: string;
+  docsExt?: Record<string, unknown>;
+}): Token {
   return {
     name: overrides.name,
     path: overrides.path,
@@ -76,7 +74,7 @@ function buildTree(
 
 describe('buildPublicApiGroups', () => {
   it('should place ungrouped tokens in the top-level tokens array', () => {
-    const t = fakeToken({
+    const t = mockToken({
       name: 'sky-theme-spacing-small',
       path: ['theme', 'spacing', 'small'],
       $description: 'Small spacing.',
@@ -97,7 +95,7 @@ describe('buildPublicApiGroups', () => {
   });
 
   it('should fall back to token.name when docs name is missing', () => {
-    const t = fakeToken({
+    const t = mockToken({
       name: 'sky-theme-spacing-small',
       path: ['theme', 'spacing', 'small'],
     });
@@ -108,24 +106,86 @@ describe('buildPublicApiGroups', () => {
     expect(result.tokens![0].name).toBe('sky-theme-spacing-small');
   });
 
-  it('should include deprecatedCustomProperty when present', () => {
-    const t = fakeToken({
+  it('should include deprecatedCustomProperties when present', () => {
+    const t = mockToken({
       name: 'sky-theme-color-text-default',
       path: ['theme', 'color', 'text', 'default'],
       docsExt: {
         name: 'Default Text',
-        deprecatedCustomProperty: '--old-text-color',
+        deprecatedCustomProperties: ['--old-text-color'],
       },
     });
 
     const tree = buildTree([t]);
     const result = buildPublicApiGroups([t], tree);
 
-    expect(result.tokens![0].deprecatedCustomProperty).toBe('--old-text-color');
+    expect(result.tokens![0].deprecatedCustomProperties).toEqual([
+      '--old-text-color',
+    ]);
+  });
+
+  it('should include obsoleteCustomProperties when present', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-text-default',
+      path: ['theme', 'color', 'text', 'default'],
+      docsExt: {
+        name: 'Default Text',
+        obsoleteCustomProperties: ['--removed-text-color'],
+      },
+    });
+
+    const tree = buildTree([t]);
+    const result = buildPublicApiGroups([t], tree);
+
+    expect(result.tokens![0].obsoleteCustomProperties).toEqual([
+      '--removed-text-color',
+    ]);
+  });
+
+  it('should include cssProperty when present', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-text-default',
+      path: ['theme', 'color', 'text', 'default'],
+      docsExt: {
+        name: 'Default Text',
+        cssProperty: 'color',
+      },
+    });
+
+    const tree = buildTree([t]);
+    const result = buildPublicApiGroups([t], tree);
+
+    expect(result.tokens![0].cssProperty).toBe('color');
+  });
+
+  it('should include demoMetadata when present', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-text-default',
+      path: ['theme', 'color', 'text', 'default'],
+      docsExt: {
+        name: 'Default Text',
+        demoMetadata: {
+          type: 'text',
+          background: 'dark',
+          color: '#fff',
+          text: 'Hello',
+        },
+      },
+    });
+
+    const tree = buildTree([t]);
+    const result = buildPublicApiGroups([t], tree);
+
+    expect(result.tokens![0].demoMetadata).toEqual({
+      type: 'text',
+      background: 'dark',
+      color: '#fff',
+      text: 'Hello',
+    });
   });
 
   it('should nest tokens under groups from ancestor extensions', () => {
-    const t = fakeToken({
+    const t = mockToken({
       name: 'sky-theme-color-text-default',
       path: ['theme', 'color', 'text', 'default'],
       $description: 'The default text color.',
@@ -160,12 +220,12 @@ describe('buildPublicApiGroups', () => {
   });
 
   it('should group multiple tokens under the same group', () => {
-    const t1 = fakeToken({
+    const t1 = mockToken({
       name: 'sky-theme-color-text-default',
       path: ['theme', 'color', 'text', 'default'],
       docsExt: { name: 'Default Text' },
     });
-    const t2 = fakeToken({
+    const t2 = mockToken({
       name: 'sky-theme-color-text-secondary',
       path: ['theme', 'color', 'text', 'secondary'],
       docsExt: { name: 'Secondary Text' },
@@ -183,7 +243,7 @@ describe('buildPublicApiGroups', () => {
   });
 
   it('should handle tokens with no description', () => {
-    const t = fakeToken({
+    const t = mockToken({
       name: 'sky-theme-spacing-small',
       path: ['theme', 'spacing', 'small'],
       docsExt: { name: 'Small Spacing' },
@@ -330,9 +390,78 @@ describe('mergePublicApiResults', () => {
     const textGroup = target.groups![0].groups![0];
     expect(textGroup.tokens).toHaveLength(2);
   });
+
+  it('should not deduplicate distinct deprecated-only tokens with no customProperty', () => {
+    const target: PublicApiTokens = {
+      tokens: [
+        { name: 'Deprecated A', deprecatedCustomProperties: ['--old-a'] },
+      ],
+    };
+    const source: PublicApiTokens = {
+      tokens: [
+        { name: 'Deprecated A', deprecatedCustomProperties: ['--old-a-dup'] },
+        { name: 'Deprecated B', deprecatedCustomProperties: ['--old-b'] },
+      ],
+    };
+
+    mergePublicApiResults(target, source);
+
+    // All three have distinct stable keys (--old-a, --old-a-dup, --old-b).
+    expect(target.tokens).toHaveLength(3);
+    expect(target.tokens!.map((t) => t.deprecatedCustomProperties)).toEqual([
+      ['--old-a'],
+      ['--old-a-dup'],
+      ['--old-b'],
+    ]);
+  });
+
+  it('should not deduplicate entries with the same name but different deprecatedCustomProperties', () => {
+    const target: PublicApiTokens = {
+      tokens: [
+        { name: 'Old Token', deprecatedCustomProperties: ['--old-color'] },
+      ],
+    };
+    const source: PublicApiTokens = {
+      tokens: [
+        { name: 'Old Token', deprecatedCustomProperties: ['--old-spacing'] },
+      ],
+    };
+
+    mergePublicApiResults(target, source);
+
+    // Different deprecatedCustomProperties → distinct entries, not duplicates.
+    expect(target.tokens).toHaveLength(2);
+    expect(target.tokens!.map((t) => t.deprecatedCustomProperties)).toEqual([
+      ['--old-color'],
+      ['--old-spacing'],
+    ]);
+  });
+
+  it('should not deduplicate distinct obsolete-only tokens with no customProperty', () => {
+    const target: PublicApiTokens = {
+      tokens: [
+        { name: 'Obsolete A', obsoleteCustomProperties: ['--removed-a'] },
+      ],
+    };
+    const source: PublicApiTokens = {
+      tokens: [
+        { name: 'Obsolete A', obsoleteCustomProperties: ['--removed-a-dup'] },
+        { name: 'Obsolete B', obsoleteCustomProperties: ['--removed-b'] },
+      ],
+    };
+
+    mergePublicApiResults(target, source);
+
+    expect(target.tokens).toHaveLength(3);
+    expect(target.tokens!.map((t) => t.obsoleteCustomProperties)).toEqual([
+      ['--removed-a'],
+      ['--removed-a-dup'],
+      ['--removed-b'],
+    ]);
+  });
 });
 
-describe('collectPublicTokenCssProperties', () => {
+describe('collectPublicTokenCustomProperties', () => {
   it('should collect top-level token custom properties', () => {
     const api: PublicApiTokens = {
       tokens: [
@@ -341,7 +470,7 @@ describe('collectPublicTokenCssProperties', () => {
       ],
     };
 
-    const result = collectPublicTokenCssProperties(api);
+    const result = collectPublicTokenCustomProperties(api);
 
     expect(result).toEqual(new Set(['--a', '--b']));
   });
@@ -362,13 +491,13 @@ describe('collectPublicTokenCssProperties', () => {
       ],
     };
 
-    const result = collectPublicTokenCssProperties(api);
+    const result = collectPublicTokenCustomProperties(api);
 
     expect(result).toEqual(new Set(['--color-a', '--color-text-b']));
   });
 
   it('should return an empty set for empty input', () => {
-    const result = collectPublicTokenCssProperties({});
+    const result = collectPublicTokenCustomProperties({});
     expect(result.size).toBe(0);
   });
 
@@ -378,9 +507,43 @@ describe('collectPublicTokenCssProperties', () => {
       tokens: [{ name: 'A', customProperty: '--a' }],
     };
 
-    const result = collectPublicTokenCssProperties(api, existing);
+    const result = collectPublicTokenCustomProperties(api, existing);
 
     expect(result).toBe(existing);
     expect(result).toEqual(new Set(['--existing', '--a']));
+  });
+
+  it('should skip tokens without a customProperty', () => {
+    const api: PublicApiTokens = {
+      tokens: [
+        { name: 'A', customProperty: '--a' },
+        { name: 'Deprecated Token', deprecatedCustomProperties: ['--old'] },
+      ],
+    };
+
+    const result = collectPublicTokenCustomProperties(api);
+
+    expect(result).toEqual(new Set(['--a']));
+  });
+
+  it('should skip tokens without a customProperty inside groups', () => {
+    const api: PublicApiTokens = {
+      groups: [
+        {
+          groupName: 'Colors',
+          tokens: [
+            { name: 'A', customProperty: '--color-a' },
+            {
+              name: 'Deprecated Color',
+              deprecatedCustomProperties: ['--old-color'],
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = collectPublicTokenCustomProperties(api);
+
+    expect(result).toEqual(new Set(['--color-a']));
   });
 });

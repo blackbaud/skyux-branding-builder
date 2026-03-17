@@ -25,10 +25,11 @@ describe('buildStyleDictionaryPlugin', () => {
   async function validate(
     tokenConfig: TokenConfig,
     expectedEmittedFiles: { fileName: string; source: string }[],
-    assetsCssMock: (basePath?: string) => Promise<string> = async () => '',
+    assetsCssMock: (basePath?: string) => Promise<string> = () =>
+      Promise.resolve(''),
     expectedEmittedPublicApiFile?: { source: string },
     expectedEmittedPublicApiJsonFile?: { source: string },
-    expectedEmittedPublicApiClassesJsonFile?: { source: string },
+    expectedEmittedPublicApiStylesJsonFile?: { source: string },
   ): Promise<void> {
     vi.spyOn(assetsUtils, 'generateAssetsCss').mockImplementation(
       assetsCssMock,
@@ -38,12 +39,12 @@ describe('buildStyleDictionaryPlugin', () => {
     await callGenerateBundle(plugin, emitFileSpy);
 
     // Each token set should generate both assets/scss/ and bundles/ files
-    expect(emitFileSpy).toHaveBeenCalledTimes(
-      expectedEmittedFiles.length * 2
-        + (expectedEmittedPublicApiFile ? 1 : 0)
-        + (expectedEmittedPublicApiJsonFile ? 1 : 0)
-        + (expectedEmittedPublicApiClassesJsonFile ? 1 : 0),
-    );
+    const baseCalls = expectedEmittedFiles.length * 2;
+    const extraCalls =
+      (expectedEmittedPublicApiFile ? 1 : 0) +
+      (expectedEmittedPublicApiJsonFile ? 1 : 0) +
+      (expectedEmittedPublicApiStylesJsonFile ? 1 : 0);
+    expect(emitFileSpy).toHaveBeenCalledTimes(baseCalls + extraCalls);
 
     for (const expectedFile of expectedEmittedFiles) {
       // Check for assets/scss/ file
@@ -81,11 +82,11 @@ describe('buildStyleDictionaryPlugin', () => {
       });
     }
 
-    if (expectedEmittedPublicApiClassesJsonFile) {
+    if (expectedEmittedPublicApiStylesJsonFile) {
       expect(emitFileSpy).toHaveBeenCalledWith({
         type: 'asset',
-        fileName: 'bundles/public-api-classes.json',
-        source: expectedEmittedPublicApiClassesJsonFile.source,
+        fileName: 'bundles/public-api-styles.json',
+        source: expectedEmittedPublicApiStylesJsonFile.source,
       });
     }
   }
@@ -238,7 +239,7 @@ describe('buildStyleDictionaryPlugin', () => {
                       name: 'Default Text',
                       customProperty: '--sky-theme-color-text-default',
                       description: 'The default text color.',
-                      deprecatedCustomProperty: '--old-text-color',
+                      deprecatedCustomProperties: ['--old-text-color'],
                     },
                   ],
                 },
@@ -249,8 +250,7 @@ describe('buildStyleDictionaryPlugin', () => {
                     {
                       name: 'Danger Background',
                       customProperty: '--sky-theme-color-background-danger',
-                      description:
-                        'The background color for danger elements.',
+                      description: 'The background color for danger elements.',
                     },
                   ],
                 },
@@ -527,7 +527,7 @@ describe('buildStyleDictionaryPlugin', () => {
                       name: 'Default Text',
                       customProperty: '--sky-theme-color-text-default',
                       description: 'The default text color.',
-                      deprecatedCustomProperty: '--old-text-color',
+                      deprecatedCustomProperties: ['--old-text-color'],
                     },
                   ],
                 },
@@ -695,10 +695,11 @@ describe('buildStyleDictionaryPlugin', () => {
       },
     ];
 
-    const assetsCssMock = async (basePath?: string) => `@font-face {
+    const assetsCssMock = (basePath?: string) =>
+      Promise.resolve(`@font-face {
   font-family: Test;
   src: url('${basePath}test.tff');
-}`;
+}`);
 
     await validate(tokenConfig, expectedEmittedFiles, assetsCssMock);
   });
@@ -719,7 +720,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'rainbow-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-grouped',
               path: 'public-classes-grouped.json',
@@ -757,14 +758,15 @@ describe('buildStyleDictionaryPlugin', () => {
 `,
     };
 
-    const expectedEmittedPublicApiClassesGroupedJsonFile = {
+    const expectedEmittedPublicApiStylesGroupedJsonFile = {
       source: JSON.stringify(
         {
           groups: [
             {
               name: 'Margin top',
-              description: 'Use these classes to add a top margin to an element.',
-              classes: [
+              description:
+                'Use these classes to add a top margin to an element.',
+              styles: [
                 {
                   name: 'Top x-small',
                   className: 'sky-theme-margin-top-xs',
@@ -791,7 +793,7 @@ describe('buildStyleDictionaryPlugin', () => {
       undefined,
       expectedEmittedPublicApiFile,
       undefined,
-      expectedEmittedPublicApiClassesGroupedJsonFile,
+      expectedEmittedPublicApiStylesGroupedJsonFile,
     );
   });
 
@@ -811,7 +813,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'rainbow-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-nested',
               path: 'public-classes-nested.json',
@@ -849,10 +851,10 @@ describe('buildStyleDictionaryPlugin', () => {
 `,
     };
 
-    const expectedEmittedPublicApiClassesNestedJsonFile = {
+    const expectedEmittedPublicApiStylesNestedJsonFile = {
       source: JSON.stringify(
         {
-          classes: [
+          styles: [
             {
               name: 'Ungrouped',
               className: 'sky-theme-ungrouped',
@@ -867,7 +869,7 @@ describe('buildStyleDictionaryPlugin', () => {
                 {
                   name: 'Text Colors',
                   description: 'Text color classes.',
-                  classes: [
+                  styles: [
                     {
                       name: 'Default Text',
                       className: 'sky-theme-text-default',
@@ -890,7 +892,7 @@ describe('buildStyleDictionaryPlugin', () => {
       undefined,
       expectedEmittedPublicApiFile,
       undefined,
-      expectedEmittedPublicApiClassesNestedJsonFile,
+      expectedEmittedPublicApiStylesNestedJsonFile,
     );
   });
 
@@ -916,7 +918,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'public-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-invalid-refs',
               path: 'public-classes-invalid-refs.json',
@@ -955,7 +957,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'public-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-valid-refs',
               path: 'public-classes-valid-refs.json',
@@ -1012,7 +1014,7 @@ describe('buildStyleDictionaryPlugin', () => {
                       name: 'Default Text',
                       customProperty: '--sky-theme-color-text-default',
                       description: 'The default text color.',
-                      deprecatedCustomProperty: '--old-text-color',
+                      deprecatedCustomProperties: ['--old-text-color'],
                     },
                   ],
                 },
@@ -1036,10 +1038,10 @@ describe('buildStyleDictionaryPlugin', () => {
       ),
     };
 
-    const expectedEmittedPublicApiClassesValidRefsJsonFile = {
+    const expectedEmittedPublicApiStylesValidRefsJsonFile = {
       source: JSON.stringify(
         {
-          classes: [
+          styles: [
             {
               name: 'Default Text Color',
               className: 'sky-theme-text-default',
@@ -1059,7 +1061,7 @@ describe('buildStyleDictionaryPlugin', () => {
       undefined,
       expectedEmittedPublicApiFile,
       expectedEmittedPublicApiJsonFile,
-      expectedEmittedPublicApiClassesValidRefsJsonFile,
+      expectedEmittedPublicApiStylesValidRefsJsonFile,
     );
   });
 
@@ -1079,7 +1081,7 @@ describe('buildStyleDictionaryPlugin', () => {
               path: 'rainbow-colors.json',
             },
           ],
-          publicClasses: [
+          publicStyles: [
             {
               name: 'public-classes-grouped',
               path: 'public-classes-grouped.json',
@@ -1131,14 +1133,15 @@ describe('buildStyleDictionaryPlugin', () => {
 
     // The JSON should contain sky-theme-margin-top-xs exactly once (first occurrence wins),
     // sky-theme-margin-top-s from the first set, and sky-theme-margin-top-l from the second.
-    const expectedEmittedPublicApiClassesJsonFile = {
+    const expectedEmittedPublicApiStylesJsonFile = {
       source: JSON.stringify(
         {
           groups: [
             {
               name: 'Margin top',
-              description: 'Use these classes to add a top margin to an element.',
-              classes: [
+              description:
+                'Use these classes to add a top margin to an element.',
+              styles: [
                 {
                   name: 'Top x-small',
                   className: 'sky-theme-margin-top-xs',
@@ -1170,7 +1173,254 @@ describe('buildStyleDictionaryPlugin', () => {
       undefined,
       expectedEmittedPublicApiFile,
       undefined,
-      expectedEmittedPublicApiClassesJsonFile,
+      expectedEmittedPublicApiStylesJsonFile,
+    );
+  });
+
+  it('should include deprecated-only classes (no className or properties) in the JSON output', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'rainbow.css',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+          publicTokens: [
+            {
+              name: 'public-colors',
+              path: 'public-colors.json',
+            },
+          ],
+          publicStyles: [
+            {
+              name: 'public-classes-with-deprecated',
+              path: 'public-classes-with-deprecated.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/rainbow.css',
+        source: `.sky-theme-rainbow {
+  --rainbow-color-gray-1: #e2e3e7;
+  --rainbow-color-gray-2: #c0c2c5;
+  --rainbow-color-red-1: #fc0330;
+  --rainbow-color-red-2: #8a2538;
+  --rainbow-space-s: 10px;
+}
+.sky-theme-rainbow {
+  --sky-color-background-danger: var(--rainbow-color-gray-1);
+  --sky-color-text-default: var(--rainbow-color-red-1);
+}
+`,
+      },
+    ];
+
+    // The deprecated-only class has no CSS output; only the normal class appears.
+    const expectedEmittedPublicApiFile = {
+      source: `.sky-theme-rainbow {
+  /* The background color for danger elements. */
+  --sky-theme-color-background-danger: var(--sky-color-background-danger);
+  /* The default text color. */
+  --sky-theme-color-text-default: var(--sky-color-text-default);
+}
+.sky-theme-rainbow .sky-theme-text-default {
+  color: var(--sky-theme-color-text-default);
+}
+`,
+    };
+
+    const expectedEmittedPublicApiJsonFile = {
+      source: JSON.stringify(
+        {
+          groups: [
+            {
+              groupName: 'Colors',
+              description: 'All color tokens.',
+              groups: [
+                {
+                  groupName: 'Text Colors',
+                  description: 'Text color tokens.',
+                  tokens: [
+                    {
+                      name: 'Default Text',
+                      customProperty: '--sky-theme-color-text-default',
+                      description: 'The default text color.',
+                      deprecatedCustomProperties: ['--old-text-color'],
+                    },
+                  ],
+                },
+                {
+                  groupName: 'Background Colors',
+                  description: 'Background color tokens.',
+                  tokens: [
+                    {
+                      name: 'Danger Background',
+                      customProperty: '--sky-theme-color-background-danger',
+                      description: 'The background color for danger elements.',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    };
+
+    // The JSON should contain both the normal class and the deprecated-only class.
+    const expectedEmittedPublicApiStylesJsonFile = {
+      source: JSON.stringify(
+        {
+          styles: [
+            {
+              name: 'Default Text Color',
+              className: 'sky-theme-text-default',
+              description: 'Applies the default text color.',
+              properties: { color: 'var(--sky-theme-color-text-default)' },
+            },
+            {
+              name: 'Old Text Color',
+              deprecatedClassNames: ['sky-theme-old-text-color'],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    };
+
+    await validate(
+      tokenConfig,
+      expectedEmittedFiles,
+      undefined,
+      expectedEmittedPublicApiFile,
+      expectedEmittedPublicApiJsonFile,
+      expectedEmittedPublicApiStylesJsonFile,
+    );
+  });
+
+  it('should include deprecated-only tokens (no customProperty) from deprecatedTokensPath in the JSON output', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'rainbow.css',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+          publicTokens: [
+            {
+              name: 'public-colors',
+              path: 'public-colors.json',
+              deprecatedTokensPath: 'public-tokens-deprecated-only.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/rainbow.css',
+        source: `.sky-theme-rainbow {
+  --rainbow-color-gray-1: #e2e3e7;
+  --rainbow-color-gray-2: #c0c2c5;
+  --rainbow-color-red-1: #fc0330;
+  --rainbow-color-red-2: #8a2538;
+  --rainbow-space-s: 10px;
+}
+.sky-theme-rainbow {
+  --sky-color-background-danger: var(--rainbow-color-gray-1);
+  --sky-color-text-default: var(--rainbow-color-red-1);
+}
+`,
+      },
+    ];
+
+    // public-colors.json produces CSS; the deprecated-only entries are merged into the JSON only.
+    const expectedEmittedPublicApiFile = {
+      source: `.sky-theme-rainbow {
+  /* The background color for danger elements. */
+  --sky-theme-color-background-danger: var(--sky-color-background-danger);
+  /* The default text color. */
+  --sky-theme-color-text-default: var(--sky-color-text-default);
+}
+`,
+    };
+
+    const expectedEmittedPublicApiJsonFile = {
+      source: JSON.stringify(
+        {
+          groups: [
+            {
+              groupName: 'Colors',
+              description: 'All color tokens.',
+              groups: [
+                {
+                  groupName: 'Text Colors',
+                  description: 'Text color tokens.',
+                  tokens: [
+                    {
+                      name: 'Default Text',
+                      customProperty: '--sky-theme-color-text-default',
+                      description: 'The default text color.',
+                      deprecatedCustomProperties: ['--old-text-color'],
+                    },
+                  ],
+                },
+                {
+                  groupName: 'Background Colors',
+                  description: 'Background color tokens.',
+                  tokens: [
+                    {
+                      name: 'Danger Background',
+                      customProperty: '--sky-theme-color-background-danger',
+                      description: 'The background color for danger elements.',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+          tokens: [
+            {
+              name: 'Old Token',
+              deprecatedCustomProperties: ['--sky-theme-old-token'],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    };
+
+    await validate(
+      tokenConfig,
+      expectedEmittedFiles,
+      undefined,
+      expectedEmittedPublicApiFile,
+      expectedEmittedPublicApiJsonFile,
     );
   });
 });

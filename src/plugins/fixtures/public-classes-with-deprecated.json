@@ -7,6 +7,10 @@
       "properties": {
         "color": "var(--sky-theme-color-text-default)"
       }
+    },
+    {
+      "name": "Old Text Color",
+      "deprecatedClassNames": ["sky-theme-old-text-color"]
     }
   ]
 }

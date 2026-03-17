@@ -1,0 +1,8 @@
+{
+  "tokens": [
+    {
+      "name": "Old Token",
+      "deprecatedCustomProperties": ["--sky-theme-old-token"]
+    }
+  ]
+}

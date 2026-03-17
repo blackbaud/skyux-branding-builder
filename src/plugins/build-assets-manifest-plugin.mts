@@ -4,6 +4,7 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { AssetsConfig } from './shared/assets-config.js';
+import { AssetsImageConfig } from './shared/assets-image-config.js';
 
 function transformSrc(src: string, projectName: string): string {
   return src.startsWith('~/assets')
@@ -13,7 +14,7 @@ function transformSrc(src: string, projectName: string): string {
 
 function transformAssetsJson(code: string, projectName: string): string | null {
   try {
-    const assetsConfig: AssetsConfig = JSON.parse(code);
+    const assetsConfig = JSON.parse(code) as AssetsConfig;
 
     // Resolve asset paths in fonts
     if (assetsConfig.fonts) {
@@ -24,7 +25,9 @@ function transformAssetsJson(code: string, projectName: string): string | null {
 
     // Resolve asset paths in images
     if (assetsConfig.images) {
-      for (const imageConfig of Object.values(assetsConfig.images)) {
+      for (const imageConfig of Object.values(
+        assetsConfig.images,
+      ) as AssetsImageConfig[]) {
         imageConfig.src = transformSrc(imageConfig.src, projectName);
       }
     }

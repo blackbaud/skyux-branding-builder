@@ -1,5 +1,5 @@
 {
-  "classes": [
+  "styles": [
     {
       "name": "Ungrouped",
       "className": "sky-theme-ungrouped",
@@ -16,7 +16,7 @@
         {
           "name": "Text Colors",
           "description": "Text color classes.",
-          "classes": [
+          "styles": [
             {
               "name": "Default Text",
               "className": "sky-theme-text-default",
