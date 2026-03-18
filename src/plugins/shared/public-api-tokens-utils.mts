@@ -26,7 +26,11 @@ export function buildPublicApiGroups(
     // Walk the token's path through the raw token tree, collecting any ancestor
     // nodes that declare a groupName extension. This becomes an ordered list of
     // groups from outermost to innermost (e.g. [Colors, Text Colors]).
-    const groupPath: { groupName: string; description?: string }[] = [];
+    const groupPath: {
+      groupName: string;
+      description?: string;
+      demoMetadata?: DemoMetadata;
+    }[] = [];
     let current: TransformedTokens = tokenTree;
 
     for (const segment of token.path) {
@@ -41,6 +45,7 @@ export function buildPublicApiGroups(
         groupPath.push({
           groupName: nodeExt.groupName,
           description: node.$description,
+          demoMetadata: nodeExt.demoMetadata,
         });
       }
     }
@@ -84,8 +89,18 @@ export function buildPublicApiGroups(
       result.groups ??= [];
       let currentGroups = result.groups;
 
+      // Accumulate demoMetadata from outermost to innermost group so that
+      // ancestor metadata is inherited by tokens in deeply nested groups.
+      let accumulatedGroupMetadata: DemoMetadata | undefined;
+
       for (let i = 0; i < groupPath.length; i++) {
-        const { groupName, description } = groupPath[i];
+        const { groupName, description, demoMetadata } = groupPath[i];
+        if (demoMetadata) {
+          accumulatedGroupMetadata = {
+            ...accumulatedGroupMetadata,
+            ...demoMetadata,
+          };
+        }
         let group = currentGroups.find((g) => g.groupName === groupName);
         if (!group) {
           group = { groupName };
@@ -94,12 +109,21 @@ export function buildPublicApiGroups(
         if (description && !group.description) {
           group.description = description;
         }
+        group.demoMetadata ??= demoMetadata;
         if (i < groupPath.length - 1) {
           // Intermediate group: descend into its subgroups.
           group.groups ??= [];
           currentGroups = group.groups;
         } else {
           // Leaf group: append the token here.
+          // Merge accumulated ancestor demoMetadata (base) with token
+          // demoMetadata (override), so token fields take final precedence.
+          if (accumulatedGroupMetadata) {
+            tokenEntry.demoMetadata = {
+              ...accumulatedGroupMetadata,
+              ...tokenEntry.demoMetadata,
+            };
+          }
           group.tokens ??= [];
           group.tokens.push(tokenEntry);
         }
@@ -165,6 +189,7 @@ function mergePublicApiGroupArrays(
       if (srcGroup.description && !existing.description) {
         existing.description = srcGroup.description;
       }
+      existing.demoMetadata ??= srcGroup.demoMetadata;
       if (srcGroup.tokens) {
         existing.tokens ??= [];
         for (const token of srcGroup.tokens) {

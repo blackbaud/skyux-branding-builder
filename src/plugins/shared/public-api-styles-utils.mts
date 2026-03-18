@@ -104,6 +104,7 @@ function mergePublicApiStyleGroupArrays(
         existing.description = srcGroup.description;
       }
       existing.imageToken ??= srcGroup.imageToken;
+      existing.demoMetadata ??= srcGroup.demoMetadata;
       if (srcGroup.styles) {
         existing.styles ??= [];
         mergeStyleArrays(existing.styles, srcGroup.styles);

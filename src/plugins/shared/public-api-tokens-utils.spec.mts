@@ -37,7 +37,11 @@ function buildTree(
   tokens: Token[],
   groupAnnotations: Record<
     string,
-    { groupName?: string; description?: string }
+    {
+      groupName?: string;
+      description?: string;
+      demoMetadata?: Record<string, unknown>;
+    }
   > = {},
 ): TransformedTokens {
   const tree: TransformedTokens = {};
@@ -57,7 +61,11 @@ function buildTree(
           const node: Record<string, unknown> = {};
           const ann = groupAnnotations[fullPath];
           if (ann?.groupName) {
-            node.$extensions = { [DOCS_NS]: { groupName: ann.groupName } };
+            const ext: Record<string, unknown> = { groupName: ann.groupName };
+            if (ann.demoMetadata) {
+              ext.demoMetadata = ann.demoMetadata;
+            }
+            node.$extensions = { [DOCS_NS]: ext };
           }
           if (ann?.description) {
             node.$description = ann.description;
@@ -253,6 +261,134 @@ describe('buildPublicApiGroups', () => {
     const result = buildPublicApiGroups([t], tree);
 
     expect(result.tokens![0].description).toBeUndefined();
+  });
+
+  it('should set demoMetadata on the group from ancestor extensions', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-text-default',
+      path: ['theme', 'color', 'text', 'default'],
+      docsExt: { name: 'Default Text' },
+    });
+
+    const tree = buildTree([t], {
+      'theme.color': {
+        groupName: 'Colors',
+        demoMetadata: { background: 'dark' },
+      },
+    });
+    const result = buildPublicApiGroups([t], tree);
+
+    expect(result.groups![0].demoMetadata).toEqual({ background: 'dark' });
+  });
+
+  it('should inherit group demoMetadata on a token that has none of its own', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-text-default',
+      path: ['theme', 'color', 'default'],
+      docsExt: { name: 'Default Text' },
+    });
+
+    const tree = buildTree([t], {
+      'theme.color': {
+        groupName: 'Colors',
+        demoMetadata: { background: 'dark' },
+      },
+    });
+    const result = buildPublicApiGroups([t], tree);
+
+    expect(result.groups![0].tokens![0].demoMetadata).toEqual({
+      background: 'dark',
+    });
+  });
+
+  it('should prefer the token demoMetadata over the group demoMetadata', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-text-default',
+      path: ['theme', 'color', 'default'],
+      docsExt: { name: 'Default Text', demoMetadata: { background: 'light' } },
+    });
+
+    const tree = buildTree([t], {
+      'theme.color': {
+        groupName: 'Colors',
+        demoMetadata: { background: 'dark' },
+      },
+    });
+    const result = buildPublicApiGroups([t], tree);
+
+    // Token's background overrides the group's background.
+    expect(result.groups![0].tokens![0].demoMetadata).toEqual({
+      background: 'light',
+    });
+  });
+
+  it('should merge group and token demoMetadata with token values taking precedence', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-text-default',
+      path: ['theme', 'color', 'default'],
+      docsExt: { name: 'Default Text', demoMetadata: { type: 'text' } },
+    });
+
+    const tree = buildTree([t], {
+      'theme.color': {
+        groupName: 'Colors',
+        demoMetadata: { background: 'dark', type: 'color' },
+      },
+    });
+    const result = buildPublicApiGroups([t], tree);
+
+    // Token's type overrides group's type; group's background is inherited.
+    expect(result.groups![0].tokens![0].demoMetadata).toEqual({
+      background: 'dark',
+      type: 'text',
+    });
+  });
+
+  it('should inherit demoMetadata from ancestor groups (grandparent)', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-bg-container-default',
+      path: ['theme', 'color', 'container', 'default'],
+      docsExt: { name: 'Container Default' },
+    });
+
+    const tree = buildTree([t], {
+      'theme.color': {
+        groupName: 'Background',
+        demoMetadata: { type: 'background-color' },
+      },
+      'theme.color.container': { groupName: 'Container' },
+    });
+    const result = buildPublicApiGroups([t], tree);
+
+    // Token inherits grandparent's demoMetadata even though direct parent has none.
+    expect(
+      result.groups![0].groups![0].tokens![0].demoMetadata,
+    ).toEqual({ type: 'background-color' });
+  });
+
+  it('should let a child group override a grandparent demoMetadata field', () => {
+    const t = mockToken({
+      name: 'sky-theme-color-bg-container-default',
+      path: ['theme', 'color', 'container', 'default'],
+      docsExt: { name: 'Container Default' },
+    });
+
+    const tree = buildTree([t], {
+      'theme.color': {
+        groupName: 'Background',
+        demoMetadata: { type: 'background-color', background: 'light' },
+      },
+      'theme.color.container': {
+        groupName: 'Container',
+        demoMetadata: { background: 'dark' },
+      },
+    });
+    const result = buildPublicApiGroups([t], tree);
+
+    // Child group's background overrides grandparent's; type is still inherited.
+    expect(
+      result.groups![0].groups![0].tokens![0].demoMetadata,
+    ).toEqual({ type: 'background-color', background: 'dark' });
   });
 });
 
@@ -545,5 +681,49 @@ describe('collectPublicTokenCustomProperties', () => {
     const result = collectPublicTokenCustomProperties(api);
 
     expect(result).toEqual(new Set(['--color-a']));
+  });
+
+  it('should fill in demoMetadata on a merged group when target has none', () => {
+    const target: PublicApiTokens = {
+      groups: [{ groupName: 'Colors', tokens: [] }],
+    };
+    const source: PublicApiTokens = {
+      groups: [
+        {
+          groupName: 'Colors',
+          demoMetadata: { background: 'dark' },
+          tokens: [],
+        },
+      ],
+    };
+
+    mergePublicApiResults(target, source);
+
+    expect(target.groups![0].demoMetadata).toEqual({ background: 'dark' });
+  });
+
+  it('should not overwrite existing demoMetadata on a merged group', () => {
+    const target: PublicApiTokens = {
+      groups: [
+        {
+          groupName: 'Colors',
+          demoMetadata: { background: 'light' },
+          tokens: [],
+        },
+      ],
+    };
+    const source: PublicApiTokens = {
+      groups: [
+        {
+          groupName: 'Colors',
+          demoMetadata: { background: 'dark' },
+          tokens: [],
+        },
+      ],
+    };
+
+    mergePublicApiResults(target, source);
+
+    expect(target.groups![0].demoMetadata).toEqual({ background: 'light' });
   });
 });
