@@ -209,7 +209,7 @@ describe('getPublicDictionaryConfig', () => {
     );
   });
 
-  it('should configure both CSS and JSON platform outputs', () => {
+  it('should configure CSS platform output only', () => {
     const config = getPublicDictionaryConfig(
       'src/fixtures/',
       tokenSet,
@@ -219,10 +219,6 @@ describe('getPublicDictionaryConfig', () => {
     expect(config.platforms.css.files).toHaveLength(1);
     expect(config.platforms.css.files![0].destination).toBe(
       'rainbow/public-colors.css',
-    );
-    expect(config.platforms.json?.files).toHaveLength(1);
-    expect(config.platforms.json!.files![0].destination).toBe(
-      'rainbow/public-colors.json',
     );
   });
 });

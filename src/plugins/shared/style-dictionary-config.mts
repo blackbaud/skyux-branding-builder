@@ -134,20 +134,6 @@ export function getPublicDictionaryConfig(
     },
   ];
 
-  config.platforms.json = {
-    transformGroup: 'custom/tokens-studio',
-    buildPath: 'dist/',
-    files: [
-      {
-        destination: `${tokenSet.name}/${publicTokenSet.name}.json`,
-        format: 'json/public-api',
-        filter: (token) =>
-          path.normalize(token.filePath) ===
-          path.normalize(`${rootPath}${publicTokenSet.path}`),
-      },
-    ],
-  };
-
   return config;
 }
 

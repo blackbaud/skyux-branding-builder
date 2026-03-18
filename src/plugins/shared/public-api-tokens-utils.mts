@@ -1,136 +1,13 @@
-import { Token, TransformedTokens } from 'style-dictionary';
-
-import { PublicApiTokenGroup } from '../../types/public-api-token-group.js';
 import { DemoMetadata } from '../../types/demo-metadata.js';
+import { PublicApiTokenGroup } from '../../types/public-api-token-group.js';
 import { PublicApiToken } from '../../types/public-api-token.js';
 import { PublicApiTokens } from '../../types/public-api-tokens.js';
 
-const EXTENSIONS_NAMESPACE = 'com.blackbaud.developer.docs';
-
-interface BlackbaudDocsExtensions {
-  groupName?: string;
-  name?: string;
-  deprecatedCustomProperties?: string[];
-  obsoleteCustomProperties?: string[];
-  cssProperty?: string;
-  demoMetadata?: DemoMetadata;
-}
-
-export function buildPublicApiGroups(
-  allTokens: Token[],
-  tokenTree: TransformedTokens,
-): PublicApiTokens {
-  const result: PublicApiTokens = {};
-
-  for (const token of allTokens) {
-    // Walk the token's path through the raw token tree, collecting any ancestor
-    // nodes that declare a groupName extension. This becomes an ordered list of
-    // groups from outermost to innermost (e.g. [Colors, Text Colors]).
-    const groupPath: {
-      groupName: string;
-      description?: string;
-      demoMetadata?: DemoMetadata;
-    }[] = [];
-    let current: TransformedTokens = tokenTree;
-
-    for (const segment of token.path) {
-      current = (current as Record<string, TransformedTokens>)[
-        segment as string
-      ];
-      const node = current as Token;
-      const nodeExt = getDocsExt(
-        node.$extensions as Record<string, unknown> | undefined,
-      );
-      if (nodeExt.groupName) {
-        groupPath.push({
-          groupName: nodeExt.groupName,
-          description: node.$description,
-          demoMetadata: nodeExt.demoMetadata,
-        });
-      }
-    }
-
-    const tokenExt = getDocsExt(
-      token.$extensions as Record<string, unknown> | undefined,
-    );
-    const tokenEntry: PublicApiToken = {
-      name: tokenExt.name ?? token.name ?? '',
-      customProperty: `--${token.name}`,
-    };
-
-    if (token.$description) {
-      tokenEntry.description = token.$description;
-    }
-
-    if (tokenExt.deprecatedCustomProperties) {
-      tokenEntry.deprecatedCustomProperties =
-        tokenExt.deprecatedCustomProperties;
-    }
-
-    if (tokenExt.obsoleteCustomProperties) {
-      tokenEntry.obsoleteCustomProperties = tokenExt.obsoleteCustomProperties;
-    }
-
-    if (tokenExt.cssProperty) {
-      tokenEntry.cssProperty = tokenExt.cssProperty;
-    }
-
-    if (tokenExt.demoMetadata) {
-      tokenEntry.demoMetadata = tokenExt.demoMetadata;
-    }
-
-    // Tokens with no group ancestry go to the top-level tokens array.
-    if (groupPath.length === 0) {
-      result.tokens ??= [];
-      result.tokens.push(tokenEntry);
-    } else {
-      // Walk (or create) the nested group structure, then place the token in
-      // the innermost group.
-      result.groups ??= [];
-      let currentGroups = result.groups;
-
-      // Accumulate demoMetadata from outermost to innermost group so that
-      // ancestor metadata is inherited by tokens in deeply nested groups.
-      let accumulatedGroupMetadata: DemoMetadata | undefined;
-
-      for (let i = 0; i < groupPath.length; i++) {
-        const { groupName, description, demoMetadata } = groupPath[i];
-        if (demoMetadata) {
-          accumulatedGroupMetadata = {
-            ...accumulatedGroupMetadata,
-            ...demoMetadata,
-          };
-        }
-        let group = currentGroups.find((g) => g.groupName === groupName);
-        if (!group) {
-          group = { groupName };
-          currentGroups.push(group);
-        }
-        if (description && !group.description) {
-          group.description = description;
-        }
-        group.demoMetadata ??= demoMetadata;
-        if (i < groupPath.length - 1) {
-          // Intermediate group: descend into its subgroups.
-          group.groups ??= [];
-          currentGroups = group.groups;
-        } else {
-          // Leaf group: append the token here.
-          // Merge accumulated ancestor demoMetadata (base) with token
-          // demoMetadata (override), so token fields take final precedence.
-          if (accumulatedGroupMetadata) {
-            tokenEntry.demoMetadata = {
-              ...accumulatedGroupMetadata,
-              ...tokenEntry.demoMetadata,
-            };
-          }
-          group.tokens ??= [];
-          group.tokens.push(tokenEntry);
-        }
-      }
-    }
-  }
-
+export function collectPublicTokenCustomProperties(
+  api: PublicApiTokens,
+  result = new Set<string>(),
+): Set<string> {
+  collectFromTokensNode(api, result);
   return result;
 }
 
@@ -138,95 +15,65 @@ export function mergePublicApiResults(
   target: PublicApiTokens,
   source: PublicApiTokens,
 ): void {
-  if (source.tokens) {
-    target.tokens ??= [];
-    for (const token of source.tokens) {
-      if (
-        !target.tokens.some((t) => stableTokenKey(t) === stableTokenKey(token))
-      ) {
-        target.tokens.push(token);
-      }
+  // Process keys in source order to preserve the consumer's property ordering
+  // (e.g. whether groups or tokens appears first in their JSON).
+  for (const key of Object.keys(source)) {
+    if (key === 'groups' && source.groups) {
+      target.groups ??= [];
+      mergePublicApiGroupArrays(target.groups, source.groups);
+    } else if (key === 'tokens' && source.tokens) {
+      target.tokens ??= [];
+      mergeTokenArrays(target.tokens, source.tokens);
     }
-  }
-  if (source.groups) {
-    target.groups ??= [];
-    mergePublicApiGroupArrays(target.groups, source.groups);
   }
 }
 
-export function collectPublicTokenCustomProperties(
-  api: PublicApiTokens,
-  result = new Set<string>(),
-): Set<string> {
-  if (api.tokens) {
-    for (const token of api.tokens) {
-      if (token.customProperty) {
-        result.add(token.customProperty);
-      }
-    }
+export function applyDemoMetadataInheritance(api: PublicApiTokens): void {
+  for (const group of api.groups ?? []) {
+    applyGroupDemoMetadata(group, undefined);
   }
-  if (api.groups) {
-    for (const group of api.groups) {
-      collectGroupCustomProperties(group, result);
-    }
-  }
-  return result;
 }
 
-function getDocsExt(
-  extensions: Record<string, unknown> | undefined,
-): BlackbaudDocsExtensions {
-  return (extensions?.[EXTENSIONS_NAMESPACE] ?? {}) as BlackbaudDocsExtensions;
-}
-
-function mergePublicApiGroupArrays(
-  target: PublicApiTokenGroup[],
-  source: PublicApiTokenGroup[],
+export function validatePublicApiTokensDocs(
+  docsCustomProperties: Set<string>,
+  generatedCustomProperties: Set<string>,
+  tokenSetName: string,
 ): void {
-  for (const srcGroup of source) {
-    const existing = target.find((g) => g.groupName === srcGroup.groupName);
-    if (existing) {
-      if (srcGroup.description && !existing.description) {
-        existing.description = srcGroup.description;
-      }
-      existing.demoMetadata ??= srcGroup.demoMetadata;
-      if (srcGroup.tokens) {
-        existing.tokens ??= [];
-        for (const token of srcGroup.tokens) {
-          if (
-            !existing.tokens.some(
-              (t) => stableTokenKey(t) === stableTokenKey(token),
-            )
-          ) {
-            existing.tokens.push(token);
-          }
-        }
-      }
-      if (srcGroup.groups) {
-        existing.groups ??= [];
-        mergePublicApiGroupArrays(existing.groups, srcGroup.groups);
-      }
-    } else {
-      target.push(srcGroup);
+  const errors: string[] = [];
+
+  for (const prop of docsCustomProperties) {
+    if (!generatedCustomProperties.has(prop)) {
+      errors.push(
+        `"${prop}" is in the docs but is not generated in the public API`,
+      );
     }
+  }
+  for (const prop of generatedCustomProperties) {
+    if (!docsCustomProperties.has(prop)) {
+      errors.push(
+        `"${prop}" is generated in the public API but is not included in the docs`,
+      );
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Token docs validation failed for "${tokenSetName}":\n  ${errors.join('\n  ')}`,
+    );
   }
 }
 
-function collectGroupCustomProperties(
-  group: PublicApiTokenGroup,
+function collectFromTokensNode(
+  node: { tokens?: PublicApiToken[]; groups?: PublicApiTokenGroup[] },
   result: Set<string>,
 ): void {
-  if (group.tokens) {
-    for (const token of group.tokens) {
-      if (token.customProperty) {
-        result.add(token.customProperty);
-      }
+  for (const token of node.tokens ?? []) {
+    if (token.customProperty) {
+      result.add(token.customProperty);
     }
   }
-  if (group.groups) {
-    for (const subgroup of group.groups) {
-      collectGroupCustomProperties(subgroup, result);
-    }
+  for (const group of node.groups ?? []) {
+    collectFromTokensNode(group, result);
   }
 }
 
@@ -241,4 +88,59 @@ function stableTokenKey(token: PublicApiToken): string {
     ? [...token.obsoleteCustomProperties].sort().join('|')
     : '';
   return `${dep}::${obs}::${token.name}`;
+}
+
+function mergeTokenArrays(
+  target: PublicApiToken[],
+  source: PublicApiToken[],
+): void {
+  for (const token of source) {
+    if (!target.some((t) => stableTokenKey(t) === stableTokenKey(token))) {
+      target.push(token);
+    }
+  }
+}
+
+function mergePublicApiGroupArrays(
+  target: PublicApiTokenGroup[],
+  source: PublicApiTokenGroup[],
+): void {
+  for (const srcGroup of source) {
+    const existing = target.find((g) => g.groupName === srcGroup.groupName);
+    if (existing) {
+      existing.description ??= srcGroup.description;
+      existing.demoMetadata ??= srcGroup.demoMetadata;
+      if (srcGroup.tokens) {
+        existing.tokens ??= [];
+        mergeTokenArrays(existing.tokens, srcGroup.tokens);
+      }
+      if (srcGroup.groups) {
+        existing.groups ??= [];
+        mergePublicApiGroupArrays(existing.groups, srcGroup.groups);
+      }
+    } else {
+      target.push(srcGroup);
+    }
+  }
+}
+
+function applyGroupDemoMetadata(
+  group: PublicApiTokenGroup,
+  inherited: DemoMetadata | undefined,
+): void {
+  const accumulated = group.demoMetadata
+    ? { ...inherited, ...group.demoMetadata }
+    : inherited;
+
+  if (group.tokens && accumulated) {
+    for (const token of group.tokens) {
+      token.demoMetadata = { ...accumulated, ...token.demoMetadata };
+    }
+  }
+
+  if (group.groups) {
+    for (const subgroup of group.groups) {
+      applyGroupDemoMetadata(subgroup, accumulated);
+    }
+  }
 }

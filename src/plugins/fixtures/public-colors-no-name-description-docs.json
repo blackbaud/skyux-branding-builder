@@ -1,0 +1,18 @@
+{
+  "groups": [
+    {
+      "groupName": "Colors",
+      "groups": [
+        {
+          "groupName": "Text Colors",
+          "tokens": [
+            {
+              "name": "sky-theme-color-text-minimal",
+              "customProperty": "--sky-theme-color-text-minimal"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
