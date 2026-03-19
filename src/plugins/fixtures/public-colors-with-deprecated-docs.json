@@ -1,0 +1,39 @@
+{
+  "groups": [
+    {
+      "groupName": "Colors",
+      "description": "All color tokens.",
+      "groups": [
+        {
+          "groupName": "Text Colors",
+          "description": "Text color tokens.",
+          "tokens": [
+            {
+              "name": "Default Text",
+              "customProperty": "--sky-theme-color-text-default",
+              "description": "The default text color.",
+              "deprecatedCustomProperties": ["--old-text-color"]
+            }
+          ]
+        },
+        {
+          "groupName": "Background Colors",
+          "description": "Background color tokens.",
+          "tokens": [
+            {
+              "name": "Danger Background",
+              "customProperty": "--sky-theme-color-background-danger",
+              "description": "The background color for danger elements."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tokens": [
+    {
+      "name": "Old Token",
+      "deprecatedCustomProperties": ["--sky-theme-old-token"]
+    }
+  ]
+}

@@ -874,4 +874,30 @@ describe('mergePublicApiStylesResults', () => {
 
     expect(target.groups![0].imageToken).toBe('--sky-theme-color-original');
   });
+
+  it('should fill in demoMetadata when target group has none', () => {
+    const target: PublicApiStyles = {
+      groups: [{ name: 'Typography' }],
+    };
+    const source: PublicApiStyles = {
+      groups: [{ name: 'Typography', demoMetadata: { background: 'dark' } }],
+    };
+
+    mergePublicApiStylesResults(target, source);
+
+    expect(target.groups![0].demoMetadata).toEqual({ background: 'dark' });
+  });
+
+  it('should not overwrite existing demoMetadata', () => {
+    const target: PublicApiStyles = {
+      groups: [{ name: 'Typography', demoMetadata: { background: 'light' } }],
+    };
+    const source: PublicApiStyles = {
+      groups: [{ name: 'Typography', demoMetadata: { background: 'dark' } }],
+    };
+
+    mergePublicApiStylesResults(target, source);
+
+    expect(target.groups![0].demoMetadata).toEqual({ background: 'light' });
+  });
 });

@@ -5,6 +5,7 @@ export interface PublicApiToken {
   customProperty?: string;
   description?: string;
   deprecatedCustomProperties?: string[];
+  deprecatedScssVariables?: string[];
   obsoleteCustomProperties?: string[];
   cssProperty?: string;
   demoMetadata?: DemoMetadata;

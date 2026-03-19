@@ -12,9 +12,10 @@ import { GeneratedFile } from '../types/generated-file.js';
 import { SkyTokenOptions } from '../types/sky-token-options.js';
 import { fixAssetsUrlValue } from './shared/assets-utils.mjs';
 import {
-  buildPublicApiGroups,
+  applyDemoMetadataInheritance,
   collectPublicTokenCustomProperties,
   mergePublicApiResults,
+  validatePublicApiTokensDocs,
 } from './shared/public-api-tokens-utils.mjs';
 import {
   generatePublicStylesCss,
@@ -29,6 +30,17 @@ import {
   getReferenceDictionaryConfig,
   isUrlToken,
 } from './shared/style-dictionary-config.mjs';
+
+function extractCustomPropertiesFromCss(
+  cssFiles: GeneratedFile[],
+): Set<string> {
+  const regex = /^\s+--([\w-]+)\s*:/gm;
+  return new Set(
+    cssFiles.flatMap((file) =>
+      [...(file.output as string).matchAll(regex)].map((m) => `--${m[1]}`),
+    ),
+  );
+}
 
 async function generateDictionaryFiles(
   tokenConfig: TokenConfig,
@@ -105,24 +117,39 @@ async function generateDictionaryFiles(
             const cssFiles = (await publicTokenDictionary.formatPlatform(
               'css',
             )) as GeneratedFile[];
-            const jsonFiles = (await publicTokenDictionary.formatPlatform(
-              'json',
-            )) as GeneratedFile[];
-            if (publicTokenSet.deprecatedTokensPath) {
-              const deprecatedJson = await readFile(
-                path.join(
-                  process.cwd(),
-                  `${rootPath}${publicTokenSet.deprecatedTokensPath}`,
-                ),
-                'utf-8',
-              );
-              jsonFiles.push({ output: deprecatedJson } as GeneratedFile);
-            }
-            return { cssFiles, jsonFiles };
+
+            const docsJson = await readFile(
+              path.join(process.cwd(), `${rootPath}${publicTokenSet.docsPath}`),
+              'utf-8',
+            );
+            const docsData = JSON.parse(docsJson) as PublicApiTokens;
+
+            const generatedCustomProperties =
+              extractCustomPropertiesFromCss(cssFiles);
+
+            const docsCustomProperties =
+              collectPublicTokenCustomProperties(docsData);
+            validatePublicApiTokensDocs(
+              docsCustomProperties,
+              generatedCustomProperties,
+              publicTokenSet.name,
+            );
+
+            return {
+              cssFiles,
+              docsData,
+            };
           }),
         );
         publicTokenCssFiles.push(...publicResults.flatMap((r) => r.cssFiles));
-        publicTokenJsonFiles.push(...publicResults.flatMap((r) => r.jsonFiles));
+        publicTokenJsonFiles.push(
+          ...publicResults.map(
+            (r) =>
+              ({
+                output: JSON.stringify(r.docsData),
+              }) as GeneratedFile,
+          ),
+        );
       }
 
       if (tokenSet.publicStyles?.length) {
@@ -307,15 +334,6 @@ ${variables}
     },
   });
 
-  StyleDictionary.registerFormat({
-    name: 'json/public-api',
-    format: function ({ dictionary }) {
-      const tokenTree = dictionary.unfilteredTokens ?? dictionary.tokens;
-      const result = buildPublicApiGroups(dictionary.allTokens, tokenTree);
-      return JSON.stringify(result, null, 2);
-    },
-  });
-
   return {
     name: 'transform-style-dictionary',
     async transform(_code: string, id: string): Promise<string | undefined> {
@@ -409,6 +427,7 @@ ${variables}
         const parsed = JSON.parse(file.output as string) as PublicApiTokens;
         mergePublicApiResults(publicApiJsonData, parsed);
       }
+      applyDemoMetadataInheritance(publicApiJsonData);
       if (publicApiJsonData.groups || publicApiJsonData.tokens) {
         this.emitFile({
           type: 'asset',
