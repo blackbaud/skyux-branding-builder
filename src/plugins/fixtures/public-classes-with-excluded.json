@@ -1,0 +1,21 @@
+{
+  "styles": [
+    {
+      "name": "Default Text Color",
+      "className": "sky-theme-text-default",
+      "description": "Applies the default text color.",
+      "properties": {
+        "color": "var(--sky-theme-color-text-default)"
+      }
+    },
+    {
+      "name": "Internal Text Color",
+      "className": "sky-theme-text-internal",
+      "description": "Internal use only.",
+      "properties": {
+        "color": "var(--sky-theme-color-text-default)"
+      },
+      "excludeFromDocs": true
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import type { PublicApiStyles } from '../../types/public-api-styles.js';
 import {
   generatePublicStylesCss,
   mergePublicApiStylesResults,
+  mergePublicApiStylesResultsForCss,
   validatePublicStylesCssProperties,
 } from './public-api-styles-utils.mjs';
 
@@ -899,5 +900,91 @@ describe('mergePublicApiStylesResults', () => {
     mergePublicApiStylesResults(target, source);
 
     expect(target.groups![0].demoMetadata).toEqual({ background: 'light' });
+  });
+});
+
+describe('mergePublicApiStylesResultsForCss', () => {
+  it('should include styles flagged with excludeFromDocs', () => {
+    const target: PublicApiStyles = {};
+    const source: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          className: 'sky-theme-visible',
+          properties: { display: 'block' },
+        }),
+        makeStyle({
+          className: 'sky-theme-hidden',
+          properties: { display: 'none' },
+          excludeFromDocs: true,
+        }),
+      ],
+    };
+
+    mergePublicApiStylesResultsForCss(target, source);
+
+    expect(target.styles).toHaveLength(2);
+    expect(target.styles!.map((s) => s.className)).toEqual([
+      'sky-theme-visible',
+      'sky-theme-hidden',
+    ]);
+  });
+
+  it('should include excludeFromDocs styles inside groups', () => {
+    const target: PublicApiStyles = {};
+    const source: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Spacing',
+          styles: [
+            makeStyle({
+              className: 'sky-theme-xs',
+              properties: { 'margin-top': '0.5rem' },
+            }),
+            makeStyle({
+              className: 'sky-theme-internal',
+              properties: { 'margin-top': '1rem' },
+              excludeFromDocs: true,
+            }),
+          ],
+        },
+      ],
+    };
+
+    mergePublicApiStylesResultsForCss(target, source);
+
+    expect(target.groups![0].styles).toHaveLength(2);
+    expect(target.groups![0].styles!.map((s) => s.className)).toEqual([
+      'sky-theme-xs',
+      'sky-theme-internal',
+    ]);
+  });
+
+  it('should still deduplicate by className', () => {
+    const target: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          className: 'sky-theme-a',
+          properties: { display: 'block' },
+        }),
+      ],
+    };
+    const source: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          className: 'sky-theme-a',
+          properties: { display: 'none' },
+        }),
+        makeStyle({
+          className: 'sky-theme-b',
+          properties: { display: 'flex' },
+        }),
+      ],
+    };
+
+    mergePublicApiStylesResultsForCss(target, source);
+
+    expect(target.styles).toHaveLength(2);
+    expect(target.styles![0].properties).toEqual({ display: 'block' });
+    expect(target.styles![1].className).toBe('sky-theme-b');
   });
 });

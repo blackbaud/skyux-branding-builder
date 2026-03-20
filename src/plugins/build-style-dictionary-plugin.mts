@@ -20,6 +20,7 @@ import {
 import {
   generatePublicStylesCss,
   mergePublicApiStylesResults,
+  mergePublicApiStylesResultsForCss,
   validatePublicStylesCssProperties,
 } from './shared/public-api-styles-utils.mjs';
 import {
@@ -336,12 +337,14 @@ ${variables}
         );
 
         const publicApiStylesJsonData: PublicApiStyles = {};
+        const publicApiStylesCssData: PublicApiStyles = {};
         for (const json of publicClassJsonFiles) {
           const parsed = JSON.parse(json) as PublicApiStyles;
           mergePublicApiStylesResults(publicApiStylesJsonData, parsed);
+          mergePublicApiStylesResultsForCss(publicApiStylesCssData, parsed);
         }
-        if (publicApiStylesJsonData.groups || publicApiStylesJsonData.styles) {
-          localTokens += generatePublicStylesCss(publicApiStylesJsonData);
+        if (publicApiStylesCssData.groups || publicApiStylesCssData.styles) {
+          localTokens += generatePublicStylesCss(publicApiStylesCssData);
         }
 
         localTokens = await addAssetsCss(
@@ -394,14 +397,16 @@ ${variables}
       }
 
       const publicApiStylesJsonData: PublicApiStyles = {};
+      const publicApiStylesCssData: PublicApiStyles = {};
       for (const json of publicClassJsonFiles) {
         const parsed = JSON.parse(json) as PublicApiStyles;
         mergePublicApiStylesResults(publicApiStylesJsonData, parsed);
+        mergePublicApiStylesResultsForCss(publicApiStylesCssData, parsed);
       }
-      if (publicApiStylesJsonData.groups || publicApiStylesJsonData.styles) {
+      if (publicApiStylesCssData.groups || publicApiStylesCssData.styles) {
         compositeFiles[publicApiFileName] =
           (compositeFiles[publicApiFileName] ?? '') +
-          generatePublicStylesCss(publicApiStylesJsonData);
+          generatePublicStylesCss(publicApiStylesCssData);
       }
 
       for (const fileName of Object.keys(compositeFiles)) {

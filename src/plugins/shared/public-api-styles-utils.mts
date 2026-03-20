@@ -68,6 +68,20 @@ export function mergePublicApiStylesResults(
   }
 }
 
+export function mergePublicApiStylesResultsForCss(
+  target: PublicApiStyles,
+  source: PublicApiStyles,
+): void {
+  if (source.styles) {
+    target.styles ??= [];
+    mergeStyleArrays(target.styles, source.styles, true);
+  }
+  if (source.groups) {
+    target.groups ??= [];
+    mergePublicApiStyleGroupArrays(target.groups, source.groups, true);
+  }
+}
+
 function buildRule(
   selector: string,
   properties: Record<string, string>,
@@ -106,6 +120,7 @@ function collectGroupStyles(
 function mergePublicApiStyleGroupArrays(
   target: PublicApiStyleGroup[],
   source: PublicApiStyleGroup[],
+  includeExcluded = false,
 ): void {
   for (const srcGroup of source) {
     const existing = target.find((g) => g.name === srcGroup.name);
@@ -117,22 +132,30 @@ function mergePublicApiStyleGroupArrays(
       existing.demoMetadata ??= srcGroup.demoMetadata;
       if (srcGroup.styles) {
         existing.styles ??= [];
-        mergeStyleArrays(existing.styles, srcGroup.styles);
+        mergeStyleArrays(existing.styles, srcGroup.styles, includeExcluded);
       }
       if (srcGroup.groups) {
         existing.groups ??= [];
-        mergePublicApiStyleGroupArrays(existing.groups, srcGroup.groups);
+        mergePublicApiStyleGroupArrays(
+          existing.groups,
+          srcGroup.groups,
+          includeExcluded,
+        );
       }
     } else {
       const newGroup = { ...srcGroup };
       if (newGroup.styles) {
         const filteredStyles: PublicApiStyle[] = [];
-        mergeStyleArrays(filteredStyles, newGroup.styles);
+        mergeStyleArrays(filteredStyles, newGroup.styles, includeExcluded);
         newGroup.styles = filteredStyles;
       }
       if (newGroup.groups) {
         const filteredGroups: PublicApiStyleGroup[] = [];
-        mergePublicApiStyleGroupArrays(filteredGroups, newGroup.groups);
+        mergePublicApiStyleGroupArrays(
+          filteredGroups,
+          newGroup.groups,
+          includeExcluded,
+        );
         newGroup.groups = filteredGroups;
       }
       target.push(newGroup);
@@ -207,10 +230,11 @@ function stableStyleKey(style: PublicApiStyle): string {
 function mergeStyleArrays(
   target: PublicApiStyle[],
   source: PublicApiStyle[],
+  includeExcluded = false,
 ): void {
   for (const style of source) {
     if (
-      !style.excludeFromDocs &&
+      (includeExcluded || !style.excludeFromDocs) &&
       !target.some((c) => stableStyleKey(c) === stableStyleKey(style))
     ) {
       target.push(style);
