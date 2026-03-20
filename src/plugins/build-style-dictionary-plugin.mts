@@ -323,7 +323,7 @@ ${variables}
       if (id.includes('src/dev/tokens.css')) {
         const assetsBasePath = '/assets/';
 
-        const { tokenFiles, publicTokenCssFiles } =
+        const { tokenFiles, publicTokenCssFiles, publicClassJsonFiles } =
           await generateDictionaryFiles(tokenConfig, {
             assetsBasePath,
             selectorPrefix: '.local-dev-tokens',
@@ -334,6 +334,15 @@ ${variables}
           (acc, file) => acc + (file.output as string),
           '',
         );
+
+        const publicApiStylesJsonData: PublicApiStyles = {};
+        for (const json of publicClassJsonFiles) {
+          const parsed = JSON.parse(json) as PublicApiStyles;
+          mergePublicApiStylesResults(publicApiStylesJsonData, parsed);
+        }
+        if (publicApiStylesJsonData.groups || publicApiStylesJsonData.styles) {
+          localTokens += generatePublicStylesCss(publicApiStylesJsonData);
+        }
 
         localTokens = await addAssetsCss(
           tokenConfig,

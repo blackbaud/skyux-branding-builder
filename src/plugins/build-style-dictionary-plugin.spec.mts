@@ -1571,4 +1571,83 @@ describe('buildStyleDictionaryPlugin', () => {
       'Token docs validation failed for "public-colors-text-only"',
     );
   });
+
+  describe('transform', () => {
+    async function callTransform(
+      plugin: ReturnType<typeof buildStyleDictionaryPlugin>,
+      id: string,
+    ): Promise<string | undefined> {
+      if (plugin.transform) {
+        return (
+          plugin.transform as (
+            code: string,
+            id: string,
+          ) => Promise<string | undefined>
+        ).call({ addWatchFile: () => undefined }, '', id);
+      }
+      return undefined;
+    }
+
+    it('should include public styles CSS in the dev token output', async () => {
+      const tokenConfig: TokenConfig = {
+        rootPath: 'src/plugins/fixtures/',
+        projectName: 'skyux-brand-test',
+        tokenSets: [
+          {
+            name: 'rainbow',
+            selector: '.sky-theme-rainbow',
+            path: 'base-rainbow.json',
+            outputPath: 'rainbow.css',
+            referenceTokens: [
+              {
+                name: 'rainbow-colors',
+                path: 'rainbow-colors.json',
+              },
+            ],
+            publicTokens: [
+              {
+                name: 'public-colors',
+                path: 'public-colors.json',
+                docsPath: 'public-colors-docs.json',
+              },
+            ],
+            publicStyles: [
+              {
+                name: 'public-classes-valid-refs',
+                path: 'public-classes-valid-refs.json',
+              },
+            ],
+          },
+        ],
+      };
+
+      vi.spyOn(assetsUtils, 'generateAssetsCss').mockResolvedValue('');
+      const plugin = buildStyleDictionaryPlugin(tokenConfig);
+      const result = await callTransform(plugin, 'src/dev/tokens.css');
+
+      expect(result).toContain('.sky-theme-text-default {');
+      expect(result).toContain('color: var(--sky-theme-color-text-default);');
+    });
+
+    it('should return undefined for non-token files', async () => {
+      const tokenConfig: TokenConfig = {
+        rootPath: 'src/plugins/fixtures/',
+        projectName: 'skyux-brand-test',
+        tokenSets: [
+          {
+            name: 'rainbow',
+            selector: '.sky-theme-rainbow',
+            path: 'base-rainbow.json',
+            outputPath: 'rainbow.css',
+            referenceTokens: [],
+          },
+        ],
+      };
+
+      const plugin = buildStyleDictionaryPlugin(tokenConfig);
+      const result = await callTransform(plugin, 'src/some-other-file.ts');
+
+      expect(result).toBeUndefined();
+    });
+  });
 });
