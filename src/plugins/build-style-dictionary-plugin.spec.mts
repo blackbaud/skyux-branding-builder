@@ -753,10 +753,10 @@ describe('buildStyleDictionaryPlugin', () => {
     ];
 
     const expectedEmittedPublicApiFile = {
-      source: `.sky-theme-rainbow .sky-theme-margin-top-xs {
+      source: `.sky-theme-margin-top-xs {
   margin-top: 0.5rem;
 }
-.sky-theme-rainbow .sky-theme-margin-top-s {
+.sky-theme-margin-top-s {
   margin-top: 1rem;
 }
 `,
@@ -846,10 +846,10 @@ describe('buildStyleDictionaryPlugin', () => {
     ];
 
     const expectedEmittedPublicApiFile = {
-      source: `.sky-theme-rainbow .sky-theme-ungrouped {
+      source: `.sky-theme-ungrouped {
   display: block;
 }
-.sky-theme-rainbow .sky-theme-text-default {
+.sky-theme-text-default {
   color: black;
 }
 `,
@@ -998,7 +998,7 @@ describe('buildStyleDictionaryPlugin', () => {
   /* The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
-.sky-theme-rainbow .sky-theme-text-default {
+.sky-theme-text-default {
   color: var(--sky-theme-color-text-default);
 }
 `,
@@ -1122,16 +1122,13 @@ describe('buildStyleDictionaryPlugin', () => {
 
     // Both class sets emit their own CSS block into bundles/public-api.css; dedup only applies to the JSON.
     const expectedEmittedPublicApiFile = {
-      source: `.sky-theme-rainbow .sky-theme-margin-top-xs {
+      source: `.sky-theme-margin-top-xs {
   margin-top: 0.5rem;
 }
-.sky-theme-rainbow .sky-theme-margin-top-s {
+.sky-theme-margin-top-s {
   margin-top: 1rem;
 }
-.sky-theme-rainbow .sky-theme-margin-top-xs {
-  margin-top: 0.5rem;
-}
-.sky-theme-rainbow .sky-theme-margin-top-l {
+.sky-theme-margin-top-l {
   margin-top: 2rem;
 }
 `,
@@ -1242,7 +1239,7 @@ describe('buildStyleDictionaryPlugin', () => {
   /* The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
-.sky-theme-rainbow .sky-theme-text-default {
+.sky-theme-text-default {
   color: var(--sky-theme-color-text-default);
 }
 `,

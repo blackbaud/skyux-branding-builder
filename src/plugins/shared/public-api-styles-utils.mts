@@ -4,26 +4,26 @@ import { PublicApiStyles } from '../../types/public-api-styles.js';
 
 export function generatePublicStylesCss(
   publicApiStyles: PublicApiStyles,
-  selector: string,
 ): string {
   const styles = collectAllStyles(publicApiStyles);
   const lines: string[] = [];
+  const seen = new Set<string>();
 
   for (const style of styles) {
     if (style.className && style.properties) {
-      lines.push(`${selector} .${style.className} {`);
-      for (const [prop, value] of Object.entries(style.properties)) {
-        lines.push(`  ${prop}: ${value};`);
+      const rule = buildRule(`.${style.className}`, style.properties);
+      if (!seen.has(rule)) {
+        seen.add(rule);
+        lines.push(rule);
       }
-      lines.push('}');
     }
     if (style.selectors && style.selectors.length > 0 && style.properties) {
       for (const sel of style.selectors) {
-        lines.push(`${selector} ${sel} {`);
-        for (const [prop, value] of Object.entries(style.properties)) {
-          lines.push(`  ${prop}: ${value};`);
+        const rule = buildRule(sel, style.properties);
+        if (!seen.has(rule)) {
+          seen.add(rule);
+          lines.push(rule);
         }
-        lines.push('}');
       }
     }
   }
@@ -66,6 +66,16 @@ export function mergePublicApiStylesResults(
     target.groups ??= [];
     mergePublicApiStyleGroupArrays(target.groups, source.groups);
   }
+}
+
+function buildRule(
+  selector: string,
+  properties: Record<string, string>,
+): string {
+  const propLines = Object.entries(properties)
+    .map(([prop, value]) => `  ${prop}: ${value};`)
+    .join('\n');
+  return `${selector} {\n${propLines}\n}`;
 }
 
 function collectAllStyles(publicApiStyles: PublicApiStyles): PublicApiStyle[] {
