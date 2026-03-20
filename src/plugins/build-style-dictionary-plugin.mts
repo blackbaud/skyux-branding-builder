@@ -20,6 +20,7 @@ import {
 import {
   generatePublicStylesCss,
   mergePublicApiStylesResults,
+  mergePublicApiStylesResultsForCss,
   validatePublicStylesCssProperties,
 } from './shared/public-api-styles-utils.mjs';
 import {
@@ -48,9 +49,8 @@ async function generateDictionaryFiles(
 ): Promise<{
   tokenFiles: GeneratedFile[];
   publicTokenCssFiles: GeneratedFile[];
-  publicTokenJsonFiles: GeneratedFile[];
-  publicClassFiles: GeneratedFile[];
-  publicClassJsonFiles: GeneratedFile[];
+  publicTokenJsonFiles: string[];
+  publicClassJsonFiles: string[];
 }> {
   const sd = new StyleDictionary({ log: { verbosity: 'verbose' } });
   const rootPath = tokenConfig.rootPath || 'src/tokens/';
@@ -59,9 +59,8 @@ async function generateDictionaryFiles(
     tokenConfig.tokenSets.map(async (tokenSet) => {
       const tokenFiles: GeneratedFile[] = [];
       const publicTokenCssFiles: GeneratedFile[] = [];
-      const publicTokenJsonFiles: GeneratedFile[] = [];
-      const publicClassFiles: GeneratedFile[] = [];
-      const publicClassJsonFiles: GeneratedFile[] = [];
+      const publicTokenJsonFiles: string[] = [];
+      const publicClassJsonFiles: string[] = [];
 
       const tokenDictionary = await sd.extend(
         getBaseDictionaryConfig(rootPath, tokenSet, {
@@ -143,20 +142,15 @@ async function generateDictionaryFiles(
         );
         publicTokenCssFiles.push(...publicResults.flatMap((r) => r.cssFiles));
         publicTokenJsonFiles.push(
-          ...publicResults.map(
-            (r) =>
-              ({
-                output: JSON.stringify(r.docsData),
-              }) as GeneratedFile,
-          ),
+          ...publicResults.map((r) => JSON.stringify(r.docsData)),
         );
       }
 
       if (tokenSet.publicStyles?.length) {
         // Build the set of known CSS custom properties from this token set's public tokens.
         const knownCustomProperties = new Set<string>();
-        for (const file of publicTokenJsonFiles) {
-          const parsed = JSON.parse(file.output as string) as PublicApiTokens;
+        for (const json of publicTokenJsonFiles) {
+          const parsed = JSON.parse(json) as PublicApiTokens;
           collectPublicTokenCustomProperties(parsed, knownCustomProperties);
         }
 
@@ -172,30 +166,16 @@ async function generateDictionaryFiles(
               knownCustomProperties,
               publicStyleSet.name,
             );
-            return {
-              css: {
-                output: generatePublicStylesCss(
-                  publicApiStyles,
-                  tokenSet.selector,
-                ),
-                destination: `${tokenSet.name}/${publicStyleSet.name}.css`,
-              },
-              json: {
-                output: JSON.stringify(publicApiStyles),
-                destination: `${tokenSet.name}/${publicStyleSet.name}.json`,
-              },
-            };
+            return JSON.stringify(publicApiStyles);
           }),
         );
-        publicClassFiles.push(...classResults.map((r) => r.css));
-        publicClassJsonFiles.push(...classResults.map((r) => r.json));
+        publicClassJsonFiles.push(...classResults);
       }
 
       return {
         setTokenFiles: tokenFiles,
         setPublicTokenCssFiles: publicTokenCssFiles,
         setPublicTokenJsonFiles: publicTokenJsonFiles,
-        setPublicClassFiles: publicClassFiles,
         setPublicClassJsonFiles: publicClassJsonFiles,
       };
     }),
@@ -206,7 +186,6 @@ async function generateDictionaryFiles(
   const publicTokenJsonFiles = results.flatMap(
     (r) => r.setPublicTokenJsonFiles,
   );
-  const publicClassFiles = results.flatMap((r) => r.setPublicClassFiles);
   const publicClassJsonFiles = results.flatMap(
     (r) => r.setPublicClassJsonFiles,
   );
@@ -224,7 +203,6 @@ async function generateDictionaryFiles(
     tokenFiles,
     publicTokenCssFiles,
     publicTokenJsonFiles,
-    publicClassFiles,
     publicClassJsonFiles,
   };
 }
@@ -346,7 +324,7 @@ ${variables}
       if (id.includes('src/dev/tokens.css')) {
         const assetsBasePath = '/assets/';
 
-        const { tokenFiles, publicTokenCssFiles } =
+        const { tokenFiles, publicTokenCssFiles, publicClassJsonFiles } =
           await generateDictionaryFiles(tokenConfig, {
             assetsBasePath,
             selectorPrefix: '.local-dev-tokens',
@@ -357,6 +335,17 @@ ${variables}
           (acc, file) => acc + (file.output as string),
           '',
         );
+
+        const publicApiStylesJsonData: PublicApiStyles = {};
+        const publicApiStylesCssData: PublicApiStyles = {};
+        for (const json of publicClassJsonFiles) {
+          const parsed = JSON.parse(json) as PublicApiStyles;
+          mergePublicApiStylesResults(publicApiStylesJsonData, parsed);
+          mergePublicApiStylesResultsForCss(publicApiStylesCssData, parsed);
+        }
+        if (publicApiStylesCssData.groups || publicApiStylesCssData.styles) {
+          localTokens += generatePublicStylesCss(publicApiStylesCssData);
+        }
 
         localTokens = await addAssetsCss(
           tokenConfig,
@@ -376,7 +365,6 @@ ${variables}
         tokenFiles,
         publicTokenCssFiles,
         publicTokenJsonFiles,
-        publicClassFiles,
         publicClassJsonFiles,
       } = await generateDictionaryFiles(tokenConfig, {
         assetsBasePath,
@@ -402,10 +390,23 @@ ${variables}
         }
       }
 
-      for (const file of [...publicTokenCssFiles, ...publicClassFiles]) {
+      for (const file of publicTokenCssFiles) {
         compositeFiles[publicApiFileName] =
           (compositeFiles[publicApiFileName] ?? '') +
           ((file.output as string) ?? '');
+      }
+
+      const publicApiStylesJsonData: PublicApiStyles = {};
+      const publicApiStylesCssData: PublicApiStyles = {};
+      for (const json of publicClassJsonFiles) {
+        const parsed = JSON.parse(json) as PublicApiStyles;
+        mergePublicApiStylesResults(publicApiStylesJsonData, parsed);
+        mergePublicApiStylesResultsForCss(publicApiStylesCssData, parsed);
+      }
+      if (publicApiStylesCssData.groups || publicApiStylesCssData.styles) {
+        compositeFiles[publicApiFileName] =
+          (compositeFiles[publicApiFileName] ?? '') +
+          generatePublicStylesCss(publicApiStylesCssData);
       }
 
       for (const fileName of Object.keys(compositeFiles)) {
@@ -423,8 +424,8 @@ ${variables}
       }
 
       const publicApiJsonData: PublicApiTokens = {};
-      for (const file of publicTokenJsonFiles) {
-        const parsed = JSON.parse(file.output as string) as PublicApiTokens;
+      for (const json of publicTokenJsonFiles) {
+        const parsed = JSON.parse(json) as PublicApiTokens;
         mergePublicApiResults(publicApiJsonData, parsed);
       }
       applyDemoMetadataInheritance(publicApiJsonData);
@@ -436,11 +437,6 @@ ${variables}
         });
       }
 
-      const publicApiStylesJsonData: PublicApiStyles = {};
-      for (const file of publicClassJsonFiles) {
-        const parsed = JSON.parse(file.output as string) as PublicApiStyles;
-        mergePublicApiStylesResults(publicApiStylesJsonData, parsed);
-      }
       if (publicApiStylesJsonData.groups || publicApiStylesJsonData.styles) {
         this.emitFile({
           type: 'asset',

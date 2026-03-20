@@ -6,6 +6,7 @@ import type { PublicApiStyles } from '../../types/public-api-styles.js';
 import {
   generatePublicStylesCss,
   mergePublicApiStylesResults,
+  mergePublicApiStylesResultsForCss,
   validatePublicStylesCssProperties,
 } from './public-api-styles-utils.mjs';
 
@@ -29,9 +30,9 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
     expect(css).toBe(
-      `.sky-theme .sky-theme-margin-top-xs {
+      `.sky-theme-margin-top-xs {
   margin-top: 0.5rem;
 }
 `,
@@ -49,9 +50,9 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
     expect(css).not.toContain('/*');
-    expect(css).toContain('.sky-theme .sky-theme-foo {');
+    expect(css).toContain('.sky-theme-foo {');
   });
 
   it('should generate flat CSS for grouped classes', () => {
@@ -70,10 +71,10 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
     expect(css).not.toContain('Margin top');
     expect(css).not.toContain('Top margins');
-    expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
+    expect(css).toContain('.sky-theme-margin-top-xs {');
   });
 
   it('should flatten nested subgroups', () => {
@@ -96,13 +97,13 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
     expect(css).not.toContain('/*');
-    expect(css).toContain('.sky-theme .sky-theme-text-default {');
+    expect(css).toContain('.sky-theme-text-default {');
   });
 
   it('should handle empty input', () => {
-    const css = generatePublicStylesCss({}, '.sky-theme');
+    const css = generatePublicStylesCss({});
     expect(css).toBe('');
   });
 
@@ -120,11 +121,11 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
 
     expect(css).not.toContain('Old Class');
     expect(css).not.toContain('undefined');
-    expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
+    expect(css).toContain('.sky-theme-margin-top-xs {');
   });
 
   it('should skip obsolete-only classes that have no className or properties', () => {
@@ -141,11 +142,11 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
 
     expect(css).not.toContain('Removed Class');
     expect(css).not.toContain('undefined');
-    expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
+    expect(css).toContain('.sky-theme-margin-top-xs {');
   });
 
   it('should skip deprecated-only classes in groups', () => {
@@ -167,10 +168,10 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
 
     expect(css).not.toContain('undefined');
-    expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
+    expect(css).toContain('.sky-theme-margin-top-xs {');
   });
 
   it('should skip selectors-only entries when no properties present', () => {
@@ -184,11 +185,11 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
 
     expect(css).not.toContain('button');
     expect(css).not.toContain('undefined');
-    expect(css).toContain('.sky-theme .sky-theme-margin-top-xs {');
+    expect(css).toContain('.sky-theme-margin-top-xs {');
   });
 
   it('should generate CSS for both className and selectors when both are present', () => {
@@ -202,10 +203,10 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
 
-    expect(css).toContain('.sky-theme .sky-theme-text-default {');
-    expect(css).toContain('.sky-theme p {');
+    expect(css).toContain('.sky-theme-text-default {');
+    expect(css).toContain('p {');
   });
 
   it('should generate CSS for each selector in the selectors list', () => {
@@ -219,11 +220,11 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
 
-    expect(css).toContain('.sky-theme h1 {');
-    expect(css).toContain('.sky-theme h2 {');
-    expect(css).toContain('.sky-theme h3 {');
+    expect(css).toContain('h1 {');
+    expect(css).toContain('h2 {');
+    expect(css).toContain('h3 {');
   });
 
   it('should render both top-level classes and group classes', () => {
@@ -247,9 +248,9 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
-    expect(css).toContain('.sky-theme .sky-theme-ungrouped {');
-    expect(css).toContain('.sky-theme .sky-theme-text-default {');
+    const css = generatePublicStylesCss(input);
+    expect(css).toContain('.sky-theme-ungrouped {');
+    expect(css).toContain('.sky-theme-text-default {');
     expect(css).not.toContain('/*');
   });
 
@@ -267,12 +268,12 @@ describe('generatePublicStylesCss', () => {
       ],
     };
 
-    const css = generatePublicStylesCss(input, '.sky-theme');
+    const css = generatePublicStylesCss(input);
     expect(css).toBe(
-      `.sky-theme .sky-theme-a {
+      `.sky-theme-a {
   display: block;
 }
-.sky-theme .sky-theme-b {
+.sky-theme-b {
   display: flex;
 }
 `,
@@ -899,5 +900,91 @@ describe('mergePublicApiStylesResults', () => {
     mergePublicApiStylesResults(target, source);
 
     expect(target.groups![0].demoMetadata).toEqual({ background: 'light' });
+  });
+});
+
+describe('mergePublicApiStylesResultsForCss', () => {
+  it('should include styles flagged with excludeFromDocs', () => {
+    const target: PublicApiStyles = {};
+    const source: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          className: 'sky-theme-visible',
+          properties: { display: 'block' },
+        }),
+        makeStyle({
+          className: 'sky-theme-hidden',
+          properties: { display: 'none' },
+          excludeFromDocs: true,
+        }),
+      ],
+    };
+
+    mergePublicApiStylesResultsForCss(target, source);
+
+    expect(target.styles).toHaveLength(2);
+    expect(target.styles!.map((s) => s.className)).toEqual([
+      'sky-theme-visible',
+      'sky-theme-hidden',
+    ]);
+  });
+
+  it('should include excludeFromDocs styles inside groups', () => {
+    const target: PublicApiStyles = {};
+    const source: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Spacing',
+          styles: [
+            makeStyle({
+              className: 'sky-theme-xs',
+              properties: { 'margin-top': '0.5rem' },
+            }),
+            makeStyle({
+              className: 'sky-theme-internal',
+              properties: { 'margin-top': '1rem' },
+              excludeFromDocs: true,
+            }),
+          ],
+        },
+      ],
+    };
+
+    mergePublicApiStylesResultsForCss(target, source);
+
+    expect(target.groups![0].styles).toHaveLength(2);
+    expect(target.groups![0].styles!.map((s) => s.className)).toEqual([
+      'sky-theme-xs',
+      'sky-theme-internal',
+    ]);
+  });
+
+  it('should still deduplicate by className', () => {
+    const target: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          className: 'sky-theme-a',
+          properties: { display: 'block' },
+        }),
+      ],
+    };
+    const source: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          className: 'sky-theme-a',
+          properties: { display: 'none' },
+        }),
+        makeStyle({
+          className: 'sky-theme-b',
+          properties: { display: 'flex' },
+        }),
+      ],
+    };
+
+    mergePublicApiStylesResultsForCss(target, source);
+
+    expect(target.styles).toHaveLength(2);
+    expect(target.styles![0].properties).toEqual({ display: 'block' });
+    expect(target.styles![1].className).toBe('sky-theme-b');
   });
 });
