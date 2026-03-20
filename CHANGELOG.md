@@ -1,3 +1,8 @@
+# 4.0.0 (2026-03-20)
+
+## BREAKING CHANGES
+- Don't namespace public api classes, dedupe identical class definitions. [#7](https://github.com/blackbaud/skyux-branding-builder/pull/7)
+
 # 3.0.0 (2026-03-19)
 - Children public tokens and styles now inherit parent metadata if their metadata property is unset. [#7](https://github.com/blackbaud/skyux-branding-builder/pull/7)
 
