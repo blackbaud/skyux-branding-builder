@@ -18,6 +18,7 @@ import {
   validatePublicApiTokensDocs,
 } from './shared/public-api-tokens-utils.mjs';
 import {
+  applyDemoMetadataInheritance as applyStylesDemoMetadataInheritance,
   generatePublicStylesCss,
   mergePublicApiStylesResults,
   mergePublicApiStylesResultsForCss,
@@ -403,6 +404,7 @@ ${variables}
         mergePublicApiStylesResults(publicApiStylesJsonData, parsed);
         mergePublicApiStylesResultsForCss(publicApiStylesCssData, parsed);
       }
+      applyStylesDemoMetadataInheritance(publicApiStylesJsonData);
       if (publicApiStylesCssData.groups || publicApiStylesCssData.styles) {
         compositeFiles[publicApiFileName] =
           (compositeFiles[publicApiFileName] ?? '') +

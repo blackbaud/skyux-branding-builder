@@ -132,6 +132,10 @@ function applyGroupDemoMetadata(
     ? { ...inherited, ...group.demoMetadata }
     : inherited;
 
+  if (accumulated) {
+    group.demoMetadata = accumulated;
+  }
+
   if (group.tokens && accumulated) {
     for (const token of group.tokens) {
       token.demoMetadata = { ...accumulated, ...token.demoMetadata };

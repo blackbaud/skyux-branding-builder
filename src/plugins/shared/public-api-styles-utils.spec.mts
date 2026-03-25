@@ -4,6 +4,7 @@ import type { PublicApiStyle } from '../../types/public-api-style.js';
 import type { PublicApiStyles } from '../../types/public-api-styles.js';
 
 import {
+  applyDemoMetadataInheritance,
   generatePublicStylesCss,
   mergePublicApiStylesResults,
   mergePublicApiStylesResultsForCss,
@@ -986,5 +987,170 @@ describe('mergePublicApiStylesResultsForCss', () => {
     expect(target.styles).toHaveLength(2);
     expect(target.styles![0].properties).toEqual({ display: 'block' });
     expect(target.styles![1].className).toBe('sky-theme-b');
+  });
+});
+
+describe('applyDemoMetadataInheritance', () => {
+  it('should inherit group demoMetadata on a style that has none', () => {
+    const api: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Colors',
+          demoMetadata: { background: 'dark' },
+          styles: [makeStyle({ className: 'sky-theme-a' })],
+        },
+      ],
+    };
+
+    applyDemoMetadataInheritance(api);
+
+    expect(api.groups![0].styles![0].demoMetadata).toEqual({
+      background: 'dark',
+    });
+  });
+
+  it('should merge group and style demoMetadata with style taking precedence', () => {
+    const api: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Colors',
+          demoMetadata: { background: 'dark', type: 'color' },
+          styles: [
+            makeStyle({
+              className: 'sky-theme-a',
+              demoMetadata: { type: 'text' },
+            }),
+          ],
+        },
+      ],
+    };
+
+    applyDemoMetadataInheritance(api);
+
+    expect(api.groups![0].styles![0].demoMetadata).toEqual({
+      background: 'dark',
+      type: 'text',
+    });
+  });
+
+  it('should inherit demoMetadata from grandparent groups', () => {
+    const api: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Background',
+          demoMetadata: { type: 'background-color' },
+          groups: [
+            {
+              name: 'Container',
+              styles: [makeStyle({ className: 'sky-theme-a' })],
+            },
+          ],
+        },
+      ],
+    };
+
+    applyDemoMetadataInheritance(api);
+
+    expect(api.groups![0].groups![0].styles![0].demoMetadata).toEqual({
+      type: 'background-color',
+    });
+  });
+
+  it('should let child group override grandparent demoMetadata fields', () => {
+    const api: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Background',
+          demoMetadata: { type: 'background-color', background: 'light' },
+          groups: [
+            {
+              name: 'Container',
+              demoMetadata: { background: 'dark' },
+              styles: [makeStyle({ className: 'sky-theme-a' })],
+            },
+          ],
+        },
+      ],
+    };
+
+    applyDemoMetadataInheritance(api);
+
+    expect(api.groups![0].groups![0].styles![0].demoMetadata).toEqual({
+      type: 'background-color',
+      background: 'dark',
+    });
+  });
+
+  it('should not affect top-level styles', () => {
+    const api: PublicApiStyles = {
+      styles: [makeStyle({ className: 'sky-theme-a' })],
+    };
+
+    applyDemoMetadataInheritance(api);
+
+    expect(api.styles![0].demoMetadata).toBeUndefined();
+  });
+
+  it('should not add demoMetadata when no group has it', () => {
+    const api: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Colors',
+          styles: [makeStyle({ className: 'sky-theme-a' })],
+        },
+      ],
+    };
+
+    applyDemoMetadataInheritance(api);
+
+    expect(api.groups![0].styles![0].demoMetadata).toBeUndefined();
+  });
+
+  it('should set demoMetadata on a child group that inherits from its parent', () => {
+    const api: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Background',
+          demoMetadata: { type: 'background-color' },
+          groups: [
+            {
+              name: 'Container',
+              styles: [makeStyle({ className: 'sky-theme-a' })],
+            },
+          ],
+        },
+      ],
+    };
+
+    applyDemoMetadataInheritance(api);
+
+    expect(api.groups![0].groups![0].demoMetadata).toEqual({
+      type: 'background-color',
+    });
+  });
+
+  it('should set merged demoMetadata on a child group that partially overrides its parent', () => {
+    const api: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Background',
+          demoMetadata: { type: 'background-color', background: 'light' },
+          groups: [
+            {
+              name: 'Container',
+              demoMetadata: { background: 'dark' },
+              styles: [makeStyle({ className: 'sky-theme-a' })],
+            },
+          ],
+        },
+      ],
+    };
+
+    applyDemoMetadataInheritance(api);
+
+    expect(api.groups![0].groups![0].demoMetadata).toEqual({
+      type: 'background-color',
+      background: 'dark',
+    });
   });
 });

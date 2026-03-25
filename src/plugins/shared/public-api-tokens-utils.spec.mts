@@ -460,4 +460,52 @@ describe('applyDemoMetadataInheritance', () => {
 
     expect(api.groups![0].tokens![0].demoMetadata).toBeUndefined();
   });
+
+  it('should set demoMetadata on a child group that inherits from its parent', () => {
+    const api: PublicApiTokens = {
+      groups: [
+        {
+          groupName: 'Background',
+          demoMetadata: { type: 'background-color' },
+          groups: [
+            {
+              groupName: 'Container',
+              tokens: [{ name: 'A', customProperty: '--a' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    applyDemoMetadataInheritance(api);
+
+    expect(api.groups![0].groups![0].demoMetadata).toEqual({
+      type: 'background-color',
+    });
+  });
+
+  it('should set merged demoMetadata on a child group that partially overrides its parent', () => {
+    const api: PublicApiTokens = {
+      groups: [
+        {
+          groupName: 'Background',
+          demoMetadata: { type: 'background-color', background: 'light' },
+          groups: [
+            {
+              groupName: 'Container',
+              demoMetadata: { background: 'dark' },
+              tokens: [{ name: 'A', customProperty: '--a' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    applyDemoMetadataInheritance(api);
+
+    expect(api.groups![0].groups![0].demoMetadata).toEqual({
+      type: 'background-color',
+      background: 'dark',
+    });
+  });
 });

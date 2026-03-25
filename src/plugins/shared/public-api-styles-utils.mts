@@ -1,3 +1,4 @@
+import { DemoMetadata } from '../../types/demo-metadata.js';
 import { PublicApiStyle } from '../../types/public-api-style.js';
 import { PublicApiStyleGroup } from '../../types/public-api-style-group.js';
 import { PublicApiStyles } from '../../types/public-api-styles.js';
@@ -54,6 +55,12 @@ export function validatePublicStylesCssProperties(
   }
 }
 
+export function applyDemoMetadataInheritance(api: PublicApiStyles): void {
+  for (const group of api.groups ?? []) {
+    applyGroupDemoMetadata(group, undefined);
+  }
+}
+
 export function mergePublicApiStylesResults(
   target: PublicApiStyles,
   source: PublicApiStyles,
@@ -79,6 +86,31 @@ export function mergePublicApiStylesResultsForCss(
   if (source.groups) {
     target.groups ??= [];
     mergePublicApiStyleGroupArrays(target.groups, source.groups, true);
+  }
+}
+
+function applyGroupDemoMetadata(
+  group: PublicApiStyleGroup,
+  inherited: DemoMetadata | undefined,
+): void {
+  const accumulated = group.demoMetadata
+    ? { ...inherited, ...group.demoMetadata }
+    : inherited;
+
+  if (accumulated) {
+    group.demoMetadata = accumulated;
+  }
+
+  if (group.styles && accumulated) {
+    for (const style of group.styles) {
+      style.demoMetadata = { ...accumulated, ...style.demoMetadata };
+    }
+  }
+
+  if (group.groups) {
+    for (const subgroup of group.groups) {
+      applyGroupDemoMetadata(subgroup, accumulated);
+    }
   }
 }
 

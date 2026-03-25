@@ -1484,7 +1484,8 @@ describe('buildStyleDictionaryPlugin', () => {
                 {
                   groupName: 'Text Colors',
                   description: 'Text color tokens.',
-                  demoMetadata: { background: 'dark' },
+                  // Inherits type from Colors, background overridden by Text Colors
+                  demoMetadata: { type: 'color', background: 'dark' },
                   tokens: [
                     {
                       name: 'Default Text',
@@ -1512,6 +1513,8 @@ describe('buildStyleDictionaryPlugin', () => {
                       },
                     },
                   ],
+                  // Inherits type & background from Colors; appears after tokens since it was not set originally
+                  demoMetadata: { type: 'color', background: 'light' },
                 },
               ],
             },
