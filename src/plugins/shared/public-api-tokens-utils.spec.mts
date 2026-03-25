@@ -368,7 +368,7 @@ describe('applyTokenDemoMetadataInheritance', () => {
       groups: [
         {
           groupName: 'Colors',
-          demoMetadata: { background: 'dark', type: 'color' },
+          demoMetadata: { background: 'dark', type: 'color-swatch' },
           tokens: [
             {
               name: 'A',
@@ -393,7 +393,7 @@ describe('applyTokenDemoMetadataInheritance', () => {
       groups: [
         {
           groupName: 'Background',
-          demoMetadata: { type: 'background-color' },
+          demoMetadata: { type: 'color-swatch' },
           groups: [
             {
               groupName: 'Container',
@@ -407,7 +407,7 @@ describe('applyTokenDemoMetadataInheritance', () => {
     applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].tokens![0].demoMetadata).toEqual({
-      type: 'background-color',
+      type: 'color-swatch',
     });
   });
 
@@ -416,7 +416,7 @@ describe('applyTokenDemoMetadataInheritance', () => {
       groups: [
         {
           groupName: 'Background',
-          demoMetadata: { type: 'background-color', background: 'light' },
+          demoMetadata: { type: 'color-swatch', background: 'light' },
           groups: [
             {
               groupName: 'Container',
@@ -431,7 +431,7 @@ describe('applyTokenDemoMetadataInheritance', () => {
     applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].tokens![0].demoMetadata).toEqual({
-      type: 'background-color',
+      type: 'color-swatch',
       background: 'dark',
     });
   });
@@ -466,7 +466,7 @@ describe('applyTokenDemoMetadataInheritance', () => {
       groups: [
         {
           groupName: 'Background',
-          demoMetadata: { type: 'background-color' },
+          demoMetadata: { type: 'color-swatch' },
           groups: [
             {
               groupName: 'Container',
@@ -480,7 +480,7 @@ describe('applyTokenDemoMetadataInheritance', () => {
     applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].demoMetadata).toEqual({
-      type: 'background-color',
+      type: 'color-swatch',
     });
   });
 
@@ -489,7 +489,7 @@ describe('applyTokenDemoMetadataInheritance', () => {
       groups: [
         {
           groupName: 'Background',
-          demoMetadata: { type: 'background-color', background: 'light' },
+          demoMetadata: { type: 'color-swatch', background: 'light' },
           groups: [
             {
               groupName: 'Container',
@@ -504,7 +504,7 @@ describe('applyTokenDemoMetadataInheritance', () => {
     applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].demoMetadata).toEqual({
-      type: 'background-color',
+      type: 'color-swatch',
       background: 'dark',
     });
   });

@@ -1014,7 +1014,7 @@ describe('applyStylesDemoMetadataInheritance', () => {
       groups: [
         {
           name: 'Colors',
-          demoMetadata: { background: 'dark', type: 'color' },
+          demoMetadata: { background: 'dark', type: 'color-swatch' },
           styles: [
             makeStyle({
               className: 'sky-theme-a',
@@ -1038,7 +1038,7 @@ describe('applyStylesDemoMetadataInheritance', () => {
       groups: [
         {
           name: 'Background',
-          demoMetadata: { type: 'background-color' },
+          demoMetadata: { type: 'color-swatch' },
           groups: [
             {
               name: 'Container',
@@ -1052,7 +1052,7 @@ describe('applyStylesDemoMetadataInheritance', () => {
     applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].styles![0].demoMetadata).toEqual({
-      type: 'background-color',
+      type: 'color-swatch',
     });
   });
 
@@ -1061,7 +1061,7 @@ describe('applyStylesDemoMetadataInheritance', () => {
       groups: [
         {
           name: 'Background',
-          demoMetadata: { type: 'background-color', background: 'light' },
+          demoMetadata: { type: 'color-swatch', background: 'light' },
           groups: [
             {
               name: 'Container',
@@ -1076,7 +1076,7 @@ describe('applyStylesDemoMetadataInheritance', () => {
     applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].styles![0].demoMetadata).toEqual({
-      type: 'background-color',
+      type: 'color-swatch',
       background: 'dark',
     });
   });
@@ -1111,7 +1111,7 @@ describe('applyStylesDemoMetadataInheritance', () => {
       groups: [
         {
           name: 'Background',
-          demoMetadata: { type: 'background-color' },
+          demoMetadata: { type: 'color-swatch' },
           groups: [
             {
               name: 'Container',
@@ -1125,7 +1125,7 @@ describe('applyStylesDemoMetadataInheritance', () => {
     applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].demoMetadata).toEqual({
-      type: 'background-color',
+      type: 'color-swatch',
     });
   });
 
@@ -1134,7 +1134,7 @@ describe('applyStylesDemoMetadataInheritance', () => {
       groups: [
         {
           name: 'Background',
-          demoMetadata: { type: 'background-color', background: 'light' },
+          demoMetadata: { type: 'color-swatch', background: 'light' },
           groups: [
             {
               name: 'Container',
@@ -1149,7 +1149,7 @@ describe('applyStylesDemoMetadataInheritance', () => {
     applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].demoMetadata).toEqual({
-      type: 'background-color',
+      type: 'color-swatch',
       background: 'dark',
     });
   });
