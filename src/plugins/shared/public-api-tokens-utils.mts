@@ -28,7 +28,7 @@ export function mergePublicApiResults(
   }
 }
 
-export function applyDemoMetadataInheritance(api: PublicApiTokens): void {
+export function applyTokenDemoMetadataInheritance(api: PublicApiTokens): void {
   for (const group of api.groups ?? []) {
     applyGroupDemoMetadata(group, undefined);
   }

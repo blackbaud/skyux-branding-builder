@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { PublicApiTokens } from '../../types/public-api-tokens.js';
 
 import {
-  applyDemoMetadataInheritance,
+  applyTokenDemoMetadataInheritance,
   collectPublicTokenCustomProperties,
   mergePublicApiResults,
   validatePublicApiTokensDocs,
@@ -344,7 +344,7 @@ describe('mergePublicApiResults', () => {
   });
 });
 
-describe('applyDemoMetadataInheritance', () => {
+describe('applyTokenDemoMetadataInheritance', () => {
   it('should inherit group demoMetadata on a token that has none', () => {
     const api: PublicApiTokens = {
       groups: [
@@ -356,7 +356,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].tokens![0].demoMetadata).toEqual({
       background: 'dark',
@@ -380,7 +380,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].tokens![0].demoMetadata).toEqual({
       background: 'dark',
@@ -404,7 +404,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].tokens![0].demoMetadata).toEqual({
       type: 'background-color',
@@ -428,7 +428,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].tokens![0].demoMetadata).toEqual({
       type: 'background-color',
@@ -441,7 +441,7 @@ describe('applyDemoMetadataInheritance', () => {
       tokens: [{ name: 'A', customProperty: '--a' }],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.tokens![0].demoMetadata).toBeUndefined();
   });
@@ -456,7 +456,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].tokens![0].demoMetadata).toBeUndefined();
   });
@@ -477,7 +477,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].demoMetadata).toEqual({
       type: 'background-color',
@@ -501,7 +501,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].demoMetadata).toEqual({
       type: 'background-color',

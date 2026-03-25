@@ -55,7 +55,7 @@ export function validatePublicStylesCssProperties(
   }
 }
 
-export function applyDemoMetadataInheritance(api: PublicApiStyles): void {
+export function applyStylesDemoMetadataInheritance(api: PublicApiStyles): void {
   for (const group of api.groups ?? []) {
     applyGroupDemoMetadata(group, undefined);
   }

@@ -4,7 +4,7 @@ import type { PublicApiStyle } from '../../types/public-api-style.js';
 import type { PublicApiStyles } from '../../types/public-api-styles.js';
 
 import {
-  applyDemoMetadataInheritance,
+  applyStylesDemoMetadataInheritance,
   generatePublicStylesCss,
   mergePublicApiStylesResults,
   mergePublicApiStylesResultsForCss,
@@ -990,7 +990,7 @@ describe('mergePublicApiStylesResultsForCss', () => {
   });
 });
 
-describe('applyDemoMetadataInheritance', () => {
+describe('applyStylesDemoMetadataInheritance', () => {
   it('should inherit group demoMetadata on a style that has none', () => {
     const api: PublicApiStyles = {
       groups: [
@@ -1002,7 +1002,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].styles![0].demoMetadata).toEqual({
       background: 'dark',
@@ -1025,7 +1025,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].styles![0].demoMetadata).toEqual({
       background: 'dark',
@@ -1049,7 +1049,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].styles![0].demoMetadata).toEqual({
       type: 'background-color',
@@ -1073,7 +1073,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].styles![0].demoMetadata).toEqual({
       type: 'background-color',
@@ -1086,7 +1086,7 @@ describe('applyDemoMetadataInheritance', () => {
       styles: [makeStyle({ className: 'sky-theme-a' })],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyStylesDemoMetadataInheritance(api);
 
     expect(api.styles![0].demoMetadata).toBeUndefined();
   });
@@ -1101,7 +1101,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].styles![0].demoMetadata).toBeUndefined();
   });
@@ -1122,7 +1122,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].demoMetadata).toEqual({
       type: 'background-color',
@@ -1146,7 +1146,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyStylesDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].demoMetadata).toEqual({
       type: 'background-color',
