@@ -1,6 +1,6 @@
 {
   "name": "@blackbaud/skyux-branding-builder",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "style dictionary builder for design tokens",
   "main": "index.js",
   "type": "module",

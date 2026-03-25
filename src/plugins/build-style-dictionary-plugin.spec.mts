@@ -1479,12 +1479,13 @@ describe('buildStyleDictionaryPlugin', () => {
             {
               groupName: 'Colors',
               description: 'All color tokens.',
-              demoMetadata: { type: 'color', background: 'light' },
+              demoMetadata: { type: 'color-swatch', background: 'light' },
               groups: [
                 {
                   groupName: 'Text Colors',
                   description: 'Text color tokens.',
-                  demoMetadata: { background: 'dark' },
+                  // Inherits type from Colors, background overridden by Text Colors
+                  demoMetadata: { type: 'color-swatch', background: 'dark' },
                   tokens: [
                     {
                       name: 'Default Text',
@@ -1492,7 +1493,10 @@ describe('buildStyleDictionaryPlugin', () => {
                       description: 'The default text color.',
                       deprecatedCustomProperties: ['--old-text-color'],
                       // Inherits type from Colors, background overridden by Text Colors
-                      demoMetadata: { type: 'color', background: 'dark' },
+                      demoMetadata: {
+                        type: 'color-swatch',
+                        background: 'dark',
+                      },
                     },
                   ],
                 },
@@ -1506,12 +1510,14 @@ describe('buildStyleDictionaryPlugin', () => {
                       description: 'The background color for danger elements.',
                       // Inherits type & background from Colors, token adds text
                       demoMetadata: {
-                        type: 'color',
+                        type: 'color-swatch',
                         background: 'light',
                         text: 'Danger!',
                       },
                     },
                   ],
+                  // Inherits type & background from Colors; appears after tokens since it was not set originally
+                  demoMetadata: { type: 'color-swatch', background: 'light' },
                 },
               ],
             },

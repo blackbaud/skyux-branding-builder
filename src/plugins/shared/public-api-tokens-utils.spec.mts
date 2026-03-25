@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { PublicApiTokens } from '../../types/public-api-tokens.js';
 
 import {
-  applyDemoMetadataInheritance,
+  applyTokenDemoMetadataInheritance,
   collectPublicTokenCustomProperties,
   mergePublicApiResults,
   validatePublicApiTokensDocs,
@@ -344,7 +344,7 @@ describe('mergePublicApiResults', () => {
   });
 });
 
-describe('applyDemoMetadataInheritance', () => {
+describe('applyTokenDemoMetadataInheritance', () => {
   it('should inherit group demoMetadata on a token that has none', () => {
     const api: PublicApiTokens = {
       groups: [
@@ -356,7 +356,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].tokens![0].demoMetadata).toEqual({
       background: 'dark',
@@ -368,7 +368,7 @@ describe('applyDemoMetadataInheritance', () => {
       groups: [
         {
           groupName: 'Colors',
-          demoMetadata: { background: 'dark', type: 'color' },
+          demoMetadata: { background: 'dark', type: 'color-swatch' },
           tokens: [
             {
               name: 'A',
@@ -380,7 +380,7 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].tokens![0].demoMetadata).toEqual({
       background: 'dark',
@@ -393,7 +393,7 @@ describe('applyDemoMetadataInheritance', () => {
       groups: [
         {
           groupName: 'Background',
-          demoMetadata: { type: 'background-color' },
+          demoMetadata: { type: 'color-swatch' },
           groups: [
             {
               groupName: 'Container',
@@ -404,10 +404,10 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].tokens![0].demoMetadata).toEqual({
-      type: 'background-color',
+      type: 'color-swatch',
     });
   });
 
@@ -416,7 +416,7 @@ describe('applyDemoMetadataInheritance', () => {
       groups: [
         {
           groupName: 'Background',
-          demoMetadata: { type: 'background-color', background: 'light' },
+          demoMetadata: { type: 'color-swatch', background: 'light' },
           groups: [
             {
               groupName: 'Container',
@@ -428,10 +428,10 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].groups![0].tokens![0].demoMetadata).toEqual({
-      type: 'background-color',
+      type: 'color-swatch',
       background: 'dark',
     });
   });
@@ -441,7 +441,7 @@ describe('applyDemoMetadataInheritance', () => {
       tokens: [{ name: 'A', customProperty: '--a' }],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.tokens![0].demoMetadata).toBeUndefined();
   });
@@ -456,8 +456,56 @@ describe('applyDemoMetadataInheritance', () => {
       ],
     };
 
-    applyDemoMetadataInheritance(api);
+    applyTokenDemoMetadataInheritance(api);
 
     expect(api.groups![0].tokens![0].demoMetadata).toBeUndefined();
+  });
+
+  it('should set demoMetadata on a child group that inherits from its parent', () => {
+    const api: PublicApiTokens = {
+      groups: [
+        {
+          groupName: 'Background',
+          demoMetadata: { type: 'color-swatch' },
+          groups: [
+            {
+              groupName: 'Container',
+              tokens: [{ name: 'A', customProperty: '--a' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    applyTokenDemoMetadataInheritance(api);
+
+    expect(api.groups![0].groups![0].demoMetadata).toEqual({
+      type: 'color-swatch',
+    });
+  });
+
+  it('should set merged demoMetadata on a child group that partially overrides its parent', () => {
+    const api: PublicApiTokens = {
+      groups: [
+        {
+          groupName: 'Background',
+          demoMetadata: { type: 'color-swatch', background: 'light' },
+          groups: [
+            {
+              groupName: 'Container',
+              demoMetadata: { background: 'dark' },
+              tokens: [{ name: 'A', customProperty: '--a' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    applyTokenDemoMetadataInheritance(api);
+
+    expect(api.groups![0].groups![0].demoMetadata).toEqual({
+      type: 'color-swatch',
+      background: 'dark',
+    });
   });
 });

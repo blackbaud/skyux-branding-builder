@@ -28,7 +28,7 @@ export function mergePublicApiResults(
   }
 }
 
-export function applyDemoMetadataInheritance(api: PublicApiTokens): void {
+export function applyTokenDemoMetadataInheritance(api: PublicApiTokens): void {
   for (const group of api.groups ?? []) {
     applyGroupDemoMetadata(group, undefined);
   }
@@ -131,6 +131,10 @@ function applyGroupDemoMetadata(
   const accumulated = group.demoMetadata
     ? { ...inherited, ...group.demoMetadata }
     : inherited;
+
+  if (accumulated) {
+    group.demoMetadata = accumulated;
+  }
 
   if (group.tokens && accumulated) {
     for (const token of group.tokens) {

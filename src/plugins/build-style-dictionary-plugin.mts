@@ -12,12 +12,13 @@ import { GeneratedFile } from '../types/generated-file.js';
 import { SkyTokenOptions } from '../types/sky-token-options.js';
 import { fixAssetsUrlValue } from './shared/assets-utils.mjs';
 import {
-  applyDemoMetadataInheritance,
+  applyTokenDemoMetadataInheritance,
   collectPublicTokenCustomProperties,
   mergePublicApiResults,
   validatePublicApiTokensDocs,
 } from './shared/public-api-tokens-utils.mjs';
 import {
+  applyStylesDemoMetadataInheritance,
   generatePublicStylesCss,
   mergePublicApiStylesResults,
   mergePublicApiStylesResultsForCss,
@@ -403,6 +404,7 @@ ${variables}
         mergePublicApiStylesResults(publicApiStylesJsonData, parsed);
         mergePublicApiStylesResultsForCss(publicApiStylesCssData, parsed);
       }
+      applyStylesDemoMetadataInheritance(publicApiStylesJsonData);
       if (publicApiStylesCssData.groups || publicApiStylesCssData.styles) {
         compositeFiles[publicApiFileName] =
           (compositeFiles[publicApiFileName] ?? '') +
@@ -428,7 +430,7 @@ ${variables}
         const parsed = JSON.parse(json) as PublicApiTokens;
         mergePublicApiResults(publicApiJsonData, parsed);
       }
-      applyDemoMetadataInheritance(publicApiJsonData);
+      applyTokenDemoMetadataInheritance(publicApiJsonData);
       if (publicApiJsonData.groups || publicApiJsonData.tokens) {
         this.emitFile({
           type: 'asset',

@@ -3,7 +3,7 @@
     {
       "groupName": "Colors",
       "description": "All color tokens.",
-      "demoMetadata": { "type": "color", "background": "light" },
+      "demoMetadata": { "type": "color-swatch", "background": "light" },
       "groups": [
         {
           "groupName": "Text Colors",
