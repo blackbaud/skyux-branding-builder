@@ -20,25 +20,28 @@
   },
   "author": "",
   "license": "MIT",
+  "peerDependencies": {
+    "style-dictionary": "^5.0.0"
+  },
   "devDependencies": {
     "@eslint/js": "9.32.0",
-    "@tokens-studio/sd-transforms": "1.2.12",
+    "@tokens-studio/sd-transforms": "2.0.3",
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
-    "@types/fs-extra": "^11.0.4",
+    "@types/fs-extra": "11.0.4",
     "@types/node": "22.15.3",
-    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/coverage-v8": "4.1.4",
     "eslint": "9.32.0",
     "eslint-config-prettier": "10.1.8",
-    "fs-extra": "11.3.0",
-    "glob": "11.0.1",
-    "inquirer": "12.4.3",
+    "fs-extra": "11.3.4",
+    "glob": "13.0.6",
+    "inquirer": "13.4.1",
     "minimist": "1.2.8",
     "prettier": "3.6.2",
-    "style-dictionary": "4.3.3",
+    "style-dictionary": "5.4.0",
     "typescript": "5.8.2",
     "typescript-eslint": "8.38.0",
-    "vite": "7.0.6",
-    "vitest": "3.2.4"
+    "vite": "8.0.7",
+    "vitest": "4.1.4"
   },
   "engines": {
     "node": ">= 20.19.0",

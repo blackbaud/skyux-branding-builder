@@ -1,0 +1,8 @@
+{
+  "multiVal": {
+    "maxWidth": {
+      "$type": "dimension",
+      "$value": "50ch, 40vw"
+    }
+  }
+}

@@ -223,9 +223,16 @@ export function buildStyleDictionaryPlugin(tokenConfig: TokenConfig): Plugin {
   StyleDictionary.registerTransform({
     name: 'size/zero-rem',
     type: 'value',
-    filter: (token) =>
-      (token.$type === 'dimension' || token.$type === 'fontSize') &&
-      token.$value === '0',
+    filter: (token) => {
+      if (token.$type !== 'dimension' && token.$type !== 'fontSize') {
+        return false;
+      }
+      const val = token.$value as unknown;
+      if (typeof val === 'string') {
+        return parseFloat(val) === 0 && !val.includes(',');
+      }
+      return val === 0;
+    },
     transform: () => '0rem',
   });
 
@@ -250,7 +257,13 @@ export function buildStyleDictionaryPlugin(tokenConfig: TokenConfig): Plugin {
       ...getTransforms({
         platform: 'css',
       }).filter((transform) => transform !== 'ts/resolveMath'),
-      ...StyleDictionary.hooks.transformGroups.css,
+      // Exclude the built-in size/rem transform: it incorrectly collapses comma-separated
+      // multi-value dimension tokens (e.g. "50ch, 40vw") into a single value. The ts/size/px
+      // transform already handles adding units to unitless dimension values, so size/rem is
+      // redundant for all non-zero cases. Zero values are handled by size/zero-rem below.
+      ...StyleDictionary.hooks.transformGroups.css.filter(
+        (transform) => transform !== 'size/rem',
+      ),
       'name/prefixed-kebab',
       'size/zero-rem',
       'assets-path',
