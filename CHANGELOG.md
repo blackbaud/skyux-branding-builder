@@ -1,3 +1,9 @@
+# 5.0.0 (2026-04-09)
+
+## BREAKING CHANGES
+- Update Style Dictionary major version, modify transform behavior. [#10](https://github.com/blackbaud/skyux-branding-builder/pull/10)
+
+
 # 4.0.1 (2026-03-25)
 - Apply demo metadata inheritance to classes as well, apply inheritance to intermediary groups, expand metadata type. [#9](https://github.com/blackbaud/skyux-branding-builder/pull/9)
 
