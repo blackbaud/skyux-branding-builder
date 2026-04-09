@@ -217,9 +217,9 @@ describe('buildStyleDictionaryPlugin', () => {
 
     const expectedEmittedPublicApiFile = {
       source: `.sky-theme-rainbow {
-  /* The background color for danger elements. */
+  /** The background color for danger elements. */
   --sky-theme-color-background-danger: var(--sky-color-background-danger);
-  /* The default text color. */
+  /** The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
 `,
@@ -319,9 +319,9 @@ describe('buildStyleDictionaryPlugin', () => {
 
     const expectedEmittedPublicApiFile = {
       source: `.sky-theme-rainbow {
-  /* Small spacing value. */
+  /** Small spacing value. */
   --sky-theme-spacing-small: var(--rainbow-space-s);
-  /* The default text color. */
+  /** The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
 `,
@@ -503,13 +503,13 @@ describe('buildStyleDictionaryPlugin', () => {
 
     const expectedEmittedPublicApiFile = {
       source: `.sky-theme-rainbow {
-  /* The background color for danger elements. */
+  /** The background color for danger elements. */
   --sky-theme-color-background-danger: var(--sky-color-background-danger);
-  /* The default text color. */
+  /** The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
 .sky-theme-rainbow {
-  /* The default text color. */
+  /** The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
 `,
@@ -652,9 +652,37 @@ describe('buildStyleDictionaryPlugin', () => {
   --zeroTest-space-2: 0rem;
   --zeroTest-space-3: 0rem;
   --zeroTest-space-4: 0rem;
-  --zeroTest-space-5: 0px;
+  --zeroTest-space-5: 0rem;
   --zeroTest-space-6: 0;
   --zeroTest-space-7: #000000;
+}
+`,
+      },
+    ];
+
+    await validate(tokenConfig, expectedEmittedFiles);
+  });
+
+  it('should preserve comma-separated multi-value dimension tokens', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'multiVal',
+          selector: '.sky-theme-multi-val',
+          outputPath: 'multi-value-dimension.css',
+          path: 'multi-value-dimension.json',
+          referenceTokens: [],
+        },
+      ],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/multiVal.css',
+        source: `.sky-theme-multi-val {
+  --multiVal-maxWidth: 50ch, 40vw;
 }
 `,
       },
@@ -691,7 +719,7 @@ describe('buildStyleDictionaryPlugin', () => {
   --zeroTest-space-2: 0rem;
   --zeroTest-space-3: 0rem;
   --zeroTest-space-4: 0rem;
-  --zeroTest-space-5: 0px;
+  --zeroTest-space-5: 0rem;
   --zeroTest-space-6: 0;
   --zeroTest-space-7: #000000;
 }
@@ -993,9 +1021,9 @@ describe('buildStyleDictionaryPlugin', () => {
 
     const expectedEmittedPublicApiFile = {
       source: `.sky-theme-rainbow {
-  /* The background color for danger elements. */
+  /** The background color for danger elements. */
   --sky-theme-color-background-danger: var(--sky-color-background-danger);
-  /* The default text color. */
+  /** The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
 .sky-theme-text-default {
@@ -1234,9 +1262,9 @@ describe('buildStyleDictionaryPlugin', () => {
     // The deprecated-only class has no CSS output; only the normal class appears.
     const expectedEmittedPublicApiFile = {
       source: `.sky-theme-rainbow {
-  /* The background color for danger elements. */
+  /** The background color for danger elements. */
   --sky-theme-color-background-danger: var(--sky-color-background-danger);
-  /* The default text color. */
+  /** The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
 .sky-theme-text-default {
@@ -1364,9 +1392,9 @@ describe('buildStyleDictionaryPlugin', () => {
 
     const expectedEmittedPublicApiFile = {
       source: `.sky-theme-rainbow {
-  /* The background color for danger elements. */
+  /** The background color for danger elements. */
   --sky-theme-color-background-danger: var(--sky-color-background-danger);
-  /* The default text color. */
+  /** The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
 `,
@@ -1533,9 +1561,9 @@ describe('buildStyleDictionaryPlugin', () => {
       undefined,
       {
         source: `.sky-theme-rainbow {
-  /* The background color for danger elements. */
+  /** The background color for danger elements. */
   --sky-theme-color-background-danger: var(--sky-color-background-danger);
-  /* The default text color. */
+  /** The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
 `,
@@ -1632,9 +1660,9 @@ describe('buildStyleDictionaryPlugin', () => {
     // Both styles (public and excludeFromDocs) should appear in the CSS.
     const expectedEmittedPublicApiFile = {
       source: `.sky-theme-rainbow {
-  /* The background color for danger elements. */
+  /** The background color for danger elements. */
   --sky-theme-color-background-danger: var(--sky-color-background-danger);
-  /* The default text color. */
+  /** The default text color. */
   --sky-theme-color-text-default: var(--sky-color-text-default);
 }
 .sky-theme-text-default {
