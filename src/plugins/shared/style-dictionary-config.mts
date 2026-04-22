@@ -109,10 +109,12 @@ export function getPublicDictionaryConfig(
   skyOptions: SkyTokenOptions,
 ): SkyStyleDictionaryConfig {
   const config = structuredClone(DEFAULT_SD_CONFIG);
-  config.source = [`${rootPath}${tokenSet.path}`];
+  if (tokenSet.path) {
+    config.source = [`${rootPath}${tokenSet.path}`];
+  }
   config.include = [
     `${rootPath}${publicTokenSet.path}`,
-    ...tokenSet.referenceTokens.map(
+    ...(tokenSet.referenceTokens ?? []).map(
       (referenceTokenSet) => `${rootPath}${referenceTokenSet.path}`,
     ),
   ];
