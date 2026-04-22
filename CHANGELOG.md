@@ -1,3 +1,8 @@
+# 5.0.1 (2026-04-22)
+- Support token sets without base or reference tokens. [#12](https://github.com/blackbaud/skyux-branding-builder/pull/12)
+
+
+
 # 5.0.0 (2026-04-09)
 
 ## BREAKING CHANGES
