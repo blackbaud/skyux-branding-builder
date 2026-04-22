@@ -1,0 +1,19 @@
+{
+  "groups": [
+    {
+      "groupName": "Colors",
+      "groups": [
+        {
+          "groupName": "Text Colors",
+          "tokens": [
+            {
+              "name": "Default Text",
+              "customProperty": "--sky-theme-color-text-default",
+              "description": "The default text color."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

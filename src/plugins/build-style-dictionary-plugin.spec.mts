@@ -671,7 +671,6 @@ describe('buildStyleDictionaryPlugin', () => {
         {
           name: 'multiVal',
           selector: '.sky-theme-multi-val',
-          outputPath: 'multi-value-dimension.css',
           path: 'multi-value-dimension.json',
           referenceTokens: [],
         },
@@ -683,6 +682,40 @@ describe('buildStyleDictionaryPlugin', () => {
         fileName: 'assets/scss/multiVal.css',
         source: `.sky-theme-multi-val {
   --multiVal-maxWidth: 50ch, 40vw;
+}
+`,
+      },
+    ];
+
+    await validate(tokenConfig, expectedEmittedFiles);
+  });
+
+  it('should use outputPath as the emitted CSS file name when provided', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'zeroes',
+          selector: '.sky-theme-zero',
+          path: 'zeroes.json',
+          outputPath: 'custom-output.css',
+          referenceTokens: [],
+        },
+      ],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/custom-output.css',
+        source: `.sky-theme-zero {
+  --zeroTest-space-1: 0rem;
+  --zeroTest-space-2: 0rem;
+  --zeroTest-space-3: 0rem;
+  --zeroTest-space-4: 0rem;
+  --zeroTest-space-5: 0rem;
+  --zeroTest-space-6: 0;
+  --zeroTest-space-7: #000000;
 }
 `,
       },
@@ -1606,6 +1639,31 @@ describe('buildStyleDictionaryPlugin', () => {
     );
   });
 
+  it('should throw when referenceTokens are provided without a base path', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+        },
+      ],
+    };
+    vi.spyOn(assetsUtils, 'generateAssetsCss').mockResolvedValue('');
+    const plugin = buildStyleDictionaryPlugin(tokenConfig);
+    const emitFileSpy = vi.fn();
+    await expect(callGenerateBundle(plugin, emitFileSpy)).rejects.toThrow(
+      'Token set "rainbow" has referenceTokens but no base path. A base path is required when referenceTokens are provided.',
+    );
+  });
+
   it('should include excludeFromDocs styles in CSS but not in the JSON output', async () => {
     const tokenConfig: TokenConfig = {
       rootPath: 'src/plugins/fixtures/',
@@ -1739,6 +1797,42 @@ describe('buildStyleDictionaryPlugin', () => {
       expectedEmittedPublicApiFile,
       expectedEmittedPublicApiJsonFile,
       expectedEmittedPublicApiStylesJsonFile,
+    );
+  });
+
+  it('should not emit CSS files when the token set has no base path', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'default',
+          selector: '.sky-theme-default',
+          referenceTokens: [],
+          publicTokens: [
+            {
+              name: 'public-colors-hardcoded',
+              path: 'public-colors-hardcoded.json',
+              docsPath: 'public-colors-hardcoded-docs.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    vi.spyOn(assetsUtils, 'generateAssetsCss').mockResolvedValue('');
+    const plugin = buildStyleDictionaryPlugin(tokenConfig);
+    const emitFileSpy = vi.fn();
+    await callGenerateBundle(plugin, emitFileSpy);
+
+    expect(emitFileSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ fileName: 'bundles/default.css' }),
+    );
+    expect(emitFileSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ fileName: 'assets/scss/default.css' }),
+    );
+    expect(emitFileSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ fileName: 'bundles/public-api-tokens.json' }),
     );
   });
 

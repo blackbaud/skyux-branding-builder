@@ -63,19 +63,27 @@ async function generateDictionaryFiles(
       const publicTokenJsonFiles: string[] = [];
       const publicClassJsonFiles: string[] = [];
 
-      const tokenDictionary = await sd.extend(
-        getBaseDictionaryConfig(rootPath, tokenSet, {
-          ...skyOptions,
-          generateUrlAtProperties: true,
-        }),
-      );
+      if (tokenSet.path) {
+        const tokenDictionary = await sd.extend(
+          getBaseDictionaryConfig(rootPath, tokenSet, {
+            ...skyOptions,
+            generateUrlAtProperties: true,
+          }),
+        );
 
-      const sourceCssFiles: GeneratedFile[] =
-        await tokenDictionary.formatPlatform('css');
-      tokenFiles.push(...sourceCssFiles);
+        const sourceCssFiles: GeneratedFile[] =
+          await tokenDictionary.formatPlatform('css');
+        tokenFiles.push(...sourceCssFiles);
+      }
+
+      if (tokenSet.referenceTokens?.length && !tokenSet.path) {
+        throw new Error(
+          `Token set "${tokenSet.name}" has referenceTokens but no base path. A base path is required when referenceTokens are provided.`,
+        );
+      }
 
       const referenceTokenResults = await Promise.all(
-        tokenSet.referenceTokens.map(async (referenceTokenSet) => {
+        (tokenSet.referenceTokens ?? []).map(async (referenceTokenSet) => {
           const referenceTokenDictionary = await sd.extend(
             getReferenceDictionaryConfig(
               rootPath,
@@ -387,15 +395,23 @@ ${variables}
 
       const compositeFiles: Record<string, string> = {};
       const publicApiFileName = 'bundles/public-api.css';
+      const outputPathByName = new Map(
+        tokenConfig.tokenSets.map((ts) => [
+          ts.name,
+          ts.outputPath ?? `${ts.name}.css`,
+        ]),
+      );
 
       for (const file of tokenFiles) {
         if (file.destination) {
           const fileParts = file.destination.split('/');
-          const tokenSetType = fileParts[1];
-          const fileName = `bundles/${tokenSetType}.css`;
+          const tokenSetName = fileParts[1];
+          const outputFileName =
+            outputPathByName.get(tokenSetName) ?? `${tokenSetName}.css`;
+          const fileName = `bundles/${outputFileName}`;
           // For backwards compatibility with older versions of SKY UX; remove this in a future
           // breaking change.
-          const compatFileName = `assets/scss/${tokenSetType}.css`;
+          const compatFileName = `assets/scss/${outputFileName}`;
 
           const output = (file.output as string) ?? '';
           compositeFiles[fileName] = (compositeFiles[fileName] ?? '') + output;
