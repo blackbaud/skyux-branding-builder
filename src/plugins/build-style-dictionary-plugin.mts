@@ -30,6 +30,7 @@ import {
   getMediaQueryMinWidth,
   getPublicDictionaryConfig,
   getReferenceDictionaryConfig,
+  isRootScopedToken,
   isUrlToken,
 } from './shared/style-dictionary-config.mjs';
 
@@ -309,28 +310,48 @@ export function buildStyleDictionaryPlugin(tokenConfig: TokenConfig): Plugin {
           .join('\n\n');
       }
 
-      dictionary.allTokens = dictionary.allTokens.sort(sortByName);
+      const allTokens = dictionary.allTokens.sort(sortByName);
+      const rootScopedTokens = allTokens.filter(isRootScopedToken);
+      const normalTokens = allTokens.filter(
+        (token) => !isRootScopedToken(token),
+      );
 
-      const variables = formattedVariables({
-        format: 'css',
-        dictionary,
+      const formatOptions = {
+        format: 'css' as const,
         outputReferences,
         outputReferenceFallbacks,
         usesDtcg: true,
         ...(skyOptions.showDescriptions
           ? {
               formatting: {
-                commentStyle: 'long',
-                commentPosition: 'above',
+                commentStyle: 'long' as const,
+                commentPosition: 'above' as const,
               },
             }
           : {}),
-      });
+      };
 
-      return `${properties ? properties + '\n\n' : ''}${skyOptions?.selectorPrefix ?? ''}${selector} {
-${variables}
-}
-`;
+      const compoundSelector = `${skyOptions?.selectorPrefix ?? ''}${selector}`;
+
+      let blocks = '';
+
+      if (normalTokens.length > 0 || rootScopedTokens.length === 0) {
+        const normalVariables = formattedVariables({
+          ...formatOptions,
+          dictionary: { ...dictionary, allTokens: normalTokens },
+        });
+        blocks += `${compoundSelector} {\n${normalVariables}\n}\n`;
+      }
+
+      if (rootScopedTokens.length > 0) {
+        const rootScopedVariables = formattedVariables({
+          ...formatOptions,
+          dictionary: { ...dictionary, allTokens: rootScopedTokens },
+        });
+        blocks += `:root:has(body${compoundSelector}) {\n${rootScopedVariables}\n}\n`;
+      }
+
+      return `${properties ? properties + '\n\n' : ''}${blocks}`;
     },
   });
 

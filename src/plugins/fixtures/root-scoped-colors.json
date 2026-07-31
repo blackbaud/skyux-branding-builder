@@ -1,0 +1,19 @@
+{
+  "color": {
+    "text": {
+      "default": {
+        "$type": "color",
+        "$value": "{rainbow.color.red.1}"
+      }
+    },
+    "surface": {
+      "overlay": {
+        "$type": "color",
+        "$value": "{rainbow.color.gray.1}",
+        "$extensions": {
+          "com.blackbaud.developer.sky-token-scope": "root-has-body"
+        }
+      }
+    }
+  }
+}
