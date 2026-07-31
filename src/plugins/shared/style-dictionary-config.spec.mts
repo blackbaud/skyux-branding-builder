@@ -8,6 +8,7 @@ import {
   getMediaQueryMinWidth,
   getPublicDictionaryConfig,
   getReferenceDictionaryConfig,
+  isRootScopedToken,
   isUrlToken,
 } from './style-dictionary-config.mjs';
 
@@ -43,6 +44,41 @@ describe('isUrlToken', () => {
     } as unknown as Token;
 
     expect(isUrlToken(token)).toBe(false);
+  });
+});
+
+describe('isRootScopedToken', () => {
+  it('should return true for tokens with sky-token-scope root-has-body extension', () => {
+    const token = {
+      $extensions: {
+        'com.blackbaud.developer.sky-token-scope': 'root-has-body',
+      },
+    } as unknown as Token;
+
+    expect(isRootScopedToken(token)).toBe(true);
+  });
+
+  it('should return false for tokens without the extension', () => {
+    const token = {} as unknown as Token;
+    expect(isRootScopedToken(token)).toBe(false);
+  });
+
+  it('should return false for tokens with a different extension value', () => {
+    const token = {
+      $extensions: {
+        'com.blackbaud.developer.sky-token-scope': 'other',
+      },
+    } as unknown as Token;
+
+    expect(isRootScopedToken(token)).toBe(false);
+  });
+
+  it('should return false when $extensions exists but has no sky-token-scope', () => {
+    const token = {
+      $extensions: { something: 'else' },
+    } as unknown as Token;
+
+    expect(isRootScopedToken(token)).toBe(false);
   });
 });
 

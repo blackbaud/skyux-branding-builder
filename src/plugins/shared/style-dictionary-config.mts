@@ -32,6 +32,14 @@ export function isUrlToken(token: Token): boolean {
   );
 }
 
+export function isRootScopedToken(token: Token): boolean {
+  return (
+    (token.$extensions as Record<string, unknown>)?.[
+      'com.blackbaud.developer.sky-token-scope'
+    ] === 'root-has-body'
+  );
+}
+
 export function getMediaQueryMinWidth(breakpoint: Breakpoint): string {
   switch (breakpoint) {
     case 'xs':
