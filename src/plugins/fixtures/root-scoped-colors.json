@@ -7,9 +7,16 @@
       }
     },
     "surface": {
+      "base": {
+        "$type": "color",
+        "$value": "#e2e3e7",
+        "$extensions": {
+          "com.blackbaud.developer.sky-token-scope": "root-has-body"
+        }
+      },
       "overlay": {
         "$type": "color",
-        "$value": "{rainbow.color.gray.1}",
+        "$value": "{color.surface.base}",
         "$extensions": {
           "com.blackbaud.developer.sky-token-scope": "root-has-body"
         }

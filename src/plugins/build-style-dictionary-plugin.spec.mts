@@ -204,7 +204,8 @@ describe('buildStyleDictionaryPlugin', () => {
   --sky-color-text-default: var(--rainbow-color-red-1);
 }
 :root:has(body.sky-theme-rainbow) {
-  --sky-color-surface-overlay: var(--rainbow-color-gray-1);
+  --sky-color-surface-base: #e2e3e7;
+  --sky-color-surface-overlay: var(--sky-color-surface-base);
 }
 `,
       },
@@ -244,13 +245,41 @@ describe('buildStyleDictionaryPlugin', () => {
   --rainbow-space-s: 10px;
 }
 :root:has(body.sky-theme-rainbow) {
-  --sky-color-surface-overlay: var(--rainbow-color-gray-1);
+  --sky-color-surface-overlay: #e2e3e7;
 }
 `,
       },
     ];
 
     await validate(tokenConfig, expectedEmittedFiles);
+  });
+
+  it('should throw when a root-scoped token references a non-root-scoped token', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rootScopedInvalid',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'root-scoped-invalid.css',
+          referenceTokens: [
+            {
+              name: 'root-scoped-colors-invalid-reference',
+              path: 'root-scoped-colors-invalid-reference.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    vi.spyOn(assetsUtils, 'generateAssetsCss').mockResolvedValue('');
+    const plugin = buildStyleDictionaryPlugin(tokenConfig);
+    const emitFileSpy = vi.fn();
+    await expect(callGenerateBundle(plugin, emitFileSpy)).rejects.toThrow(
+      'Root-scoped token "sky-color-surface-overlay" references "rainbow-color-gray-1", which is not root-scoped.',
+    );
   });
 
   it('should create the public API styles when provided', async () => {
@@ -2004,7 +2033,7 @@ describe('buildStyleDictionaryPlugin', () => {
         ':root:has(body.local-dev-tokens.sky-theme-rainbow) {',
       );
       expect(result).toContain(
-        '--sky-color-surface-overlay: var(--rainbow-color-gray-1);',
+        '--sky-color-surface-overlay: var(--sky-color-surface-base);',
       );
     });
 

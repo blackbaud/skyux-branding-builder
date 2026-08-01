@@ -32,6 +32,14 @@ export function isUrlToken(token: Token): boolean {
   );
 }
 
+/**
+ * Tokens flagged root-scoped render under `:root:has(body<selector>)` instead of
+ * `<selector>`. Because :root:has(body...) is an ancestor of the element the normal
+ * selector applies to, custom properties only inherit downward — a root-scoped
+ * token's value must therefore reference only literals or other root-scoped tokens,
+ * never a normal-scoped token. This is enforced at build time in
+ * build-style-dictionary-plugin.mts.
+ */
 export function isRootScopedToken(token: Token): boolean {
   return (
     (token.$extensions as Record<string, unknown>)?.[

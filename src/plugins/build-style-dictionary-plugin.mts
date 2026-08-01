@@ -3,7 +3,12 @@ import { sync } from 'glob';
 import { Plugin } from 'vite';
 import path from 'path';
 import StyleDictionary from 'style-dictionary';
-import { formattedVariables, sortByName } from 'style-dictionary/utils';
+import {
+  formattedVariables,
+  getReferences,
+  sortByName,
+  usesReferences,
+} from 'style-dictionary/utils';
 import { getTransforms, register } from '@tokens-studio/sd-transforms';
 import { TokenConfig } from '../types/token-config.js';
 import { PublicApiTokens } from '../types/public-api-tokens.js';
@@ -315,6 +320,25 @@ export function buildStyleDictionaryPlugin(tokenConfig: TokenConfig): Plugin {
       const normalTokens = allTokens.filter(
         (token) => !isRootScopedToken(token),
       );
+
+      for (const token of rootScopedTokens) {
+        const originalValue = token.original.$value as string;
+        if (!usesReferences(originalValue)) {
+          continue;
+        }
+        const refs = getReferences(
+          originalValue,
+          dictionary.tokens,
+          { unfilteredTokens: dictionary.unfilteredTokens, usesDtcg: true },
+          [],
+        );
+        const invalidRef = refs.find((ref) => !isRootScopedToken(ref));
+        if (invalidRef) {
+          throw new Error(
+            `Root-scoped token "${token.name}" references "${invalidRef.name}", which is not root-scoped. Tokens flagged with $extensions["com.blackbaud.developer.sky-token-scope"] = "root-has-body" may only reference other root-scoped tokens, since :root:has(body...) cannot see custom properties declared on body.`,
+          );
+        }
+      }
 
       const formatOptions = {
         format: 'css' as const,
