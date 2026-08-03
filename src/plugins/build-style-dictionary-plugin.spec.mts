@@ -170,6 +170,118 @@ describe('buildStyleDictionaryPlugin', () => {
     await validate(tokenConfig, expectedEmittedFiles);
   });
 
+  it('should scope tokens flagged with sky-token-scope under :root:has(body...)', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rootScoped',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'root-scoped.css',
+          referenceTokens: [
+            {
+              name: 'root-scoped-colors',
+              path: 'root-scoped-colors.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/root-scoped.css',
+        source: `.sky-theme-rainbow {
+  --rainbow-color-gray-1: #e2e3e7;
+  --rainbow-color-gray-2: #c0c2c5;
+  --rainbow-color-red-1: #fc0330;
+  --rainbow-color-red-2: #8a2538;
+  --rainbow-space-s: 10px;
+}
+.sky-theme-rainbow {
+  --sky-color-text-default: var(--rainbow-color-red-1);
+}
+:root:has(body.sky-theme-rainbow) {
+  --sky-color-surface-base: #e2e3e7;
+  --sky-color-surface-overlay: var(--sky-color-surface-base);
+}
+`,
+      },
+    ];
+
+    await validate(tokenConfig, expectedEmittedFiles);
+  });
+
+  it('should omit the empty normal selector block when every token in a set is root-scoped', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rootScopedOnly',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'root-scoped-only.css',
+          referenceTokens: [
+            {
+              name: 'root-scoped-colors-all-scoped',
+              path: 'root-scoped-colors-all-scoped.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/root-scoped-only.css',
+        source: `.sky-theme-rainbow {
+  --rainbow-color-gray-1: #e2e3e7;
+  --rainbow-color-gray-2: #c0c2c5;
+  --rainbow-color-red-1: #fc0330;
+  --rainbow-color-red-2: #8a2538;
+  --rainbow-space-s: 10px;
+}
+:root:has(body.sky-theme-rainbow) {
+  --sky-color-surface-overlay: #e2e3e7;
+}
+`,
+      },
+    ];
+
+    await validate(tokenConfig, expectedEmittedFiles);
+  });
+
+  it('should throw when a root-scoped token references a non-root-scoped token', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rootScopedInvalid',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'root-scoped-invalid.css',
+          referenceTokens: [
+            {
+              name: 'root-scoped-colors-invalid-reference',
+              path: 'root-scoped-colors-invalid-reference.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    vi.spyOn(assetsUtils, 'generateAssetsCss').mockResolvedValue('');
+    const plugin = buildStyleDictionaryPlugin(tokenConfig);
+    const emitFileSpy = vi.fn();
+    await expect(callGenerateBundle(plugin, emitFileSpy)).rejects.toThrow(
+      'Root-scoped token "sky-color-surface-overlay" references "rainbow-color-gray-1", which is not root-scoped.',
+    );
+  });
+
   it('should create the public API styles when provided', async () => {
     const tokenConfig: TokenConfig = {
       rootPath: 'src/plugins/fixtures/',
@@ -1891,6 +2003,38 @@ describe('buildStyleDictionaryPlugin', () => {
 
       expect(result).toContain('.sky-theme-text-default {');
       expect(result).toContain('color: var(--sky-theme-color-text-default);');
+    });
+
+    it('should fold selectorPrefix into the :has(body...) selector for root-scoped tokens in dev mode', async () => {
+      const tokenConfig: TokenConfig = {
+        rootPath: 'src/plugins/fixtures/',
+        projectName: 'skyux-brand-test',
+        tokenSets: [
+          {
+            name: 'rootScoped',
+            selector: '.sky-theme-rainbow',
+            path: 'base-rainbow.json',
+            outputPath: 'root-scoped.css',
+            referenceTokens: [
+              {
+                name: 'root-scoped-colors',
+                path: 'root-scoped-colors.json',
+              },
+            ],
+          },
+        ],
+      };
+
+      vi.spyOn(assetsUtils, 'generateAssetsCss').mockResolvedValue('');
+      const plugin = buildStyleDictionaryPlugin(tokenConfig);
+      const result = await callTransform(plugin, 'src/dev/tokens.css');
+
+      expect(result).toContain(
+        ':root:has(body.local-dev-tokens.sky-theme-rainbow) {',
+      );
+      expect(result).toContain(
+        '--sky-color-surface-overlay: var(--sky-color-surface-base);',
+      );
     });
 
     it('should include excludeFromDocs styles in the dev token output', async () => {
