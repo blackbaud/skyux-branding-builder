@@ -46,9 +46,6 @@ export function generatePublicStylesCss(
   return lines.join('\n');
 }
 
-/**
- * Collects the names of all context overrides declared by the given styles.
- */
 export function collectContextOverrideNames(
   publicApiStyles: PublicApiStyles,
   result = new Set<string>(),
@@ -61,11 +58,6 @@ export function collectContextOverrideNames(
   return result;
 }
 
-/**
- * Validates the custom property references in the given styles. `declaredContextOverrides`
- * holds the context overrides declared across all style sets, since a style may read an
- * override that a style in another set declares.
- */
 export function validatePublicStylesCssProperties(
   publicApiStyles: PublicApiStyles,
   knownCssProperties: Set<string>,
@@ -326,10 +318,6 @@ function extractCustomPropertyReferences(
   }));
 }
 
-/**
- * Replaces each `var(--sky-ctx-override-*, <fallback>)` with its fallback, so the public API
- * JSON shows the value consumers get outside a container.
- */
 function removeContextOverrideReferences(value: string): string {
   const pattern = new RegExp(
     `var\\(\\s*${CONTEXT_OVERRIDE_PREFIX}[^,)\\s]*\\s*,`,
@@ -355,7 +343,7 @@ function removeContextOverrideReferences(value: string): string {
     }
     const fallback = result.slice(fallbackStart, end - 1).trim();
     result = result.slice(0, match.index) + fallback + result.slice(end);
-    // The fallback may itself contain a context override reference.
+    // Rescan for overrides nested in the fallback.
     pattern.lastIndex = match.index;
   }
 
@@ -403,7 +391,6 @@ function mergeStyleArrays(
       (includeExcluded || !style.excludeFromDocs) &&
       !target.some((c) => stableStyleKey(c) === stableStyleKey(style))
     ) {
-      // The public API JSON never exposes context overrides.
       target.push(includeExcluded ? style : toDocsStyle(style));
     }
   }

@@ -183,7 +183,6 @@ async function generateDictionaryFiles(
           }),
         );
 
-        // A style may read a context override that a style in another set declares.
         const declaredContextOverrides = new Set<string>();
         for (const { publicApiStyles } of styleSets) {
           collectContextOverrideNames(
