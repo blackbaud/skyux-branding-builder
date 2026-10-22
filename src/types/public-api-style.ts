@@ -5,6 +5,9 @@ export interface PublicApiStyle {
   className?: string;
   selectors?: string[];
   properties?: Record<string, string>;
+  contextOverrides?: Record<string, string>;
+  /** Sets every other declared context override to `initial`. */
+  resetContextOverrides?: boolean;
   description?: string;
   deprecatedClassNames?: string[];
   obsoleteClassNames?: string[];

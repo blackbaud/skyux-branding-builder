@@ -1,0 +1,29 @@
+{
+  "groups": [
+    {
+      "name": "Containers",
+      "groups": [
+        {
+          "name": "Containers",
+          "styles": [
+            {
+              "name": "Danger container",
+              "className": "sky-theme-container-danger",
+              "properties": {
+                "background-color": "var(--sky-theme-color-background-danger)"
+              },
+              "contextOverrides": {
+                "--sky-ctx-override-text-color": "var(--sky-theme-color-text-default)"
+              }
+            },
+            {
+              "name": "Default container",
+              "className": "sky-theme-container-default",
+              "resetContextOverrides": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
