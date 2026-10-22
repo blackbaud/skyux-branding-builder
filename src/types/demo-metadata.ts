@@ -6,6 +6,7 @@ export interface DemoMetadata {
     | 'border-style'
     | 'border-width'
     | 'color-swatch'
+    | 'container'
     | 'elevation'
     | 'icon-background-color'
     | 'icon-color'

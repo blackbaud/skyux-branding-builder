@@ -5,6 +5,7 @@ import type { PublicApiStyles } from '../../types/public-api-styles.js';
 
 import {
   applyStylesDemoMetadataInheritance,
+  collectContextOverrideNames,
   generatePublicStylesCss,
   mergePublicApiStylesResults,
   mergePublicApiStylesResultsForCss,
@@ -1151,6 +1152,414 @@ describe('applyStylesDemoMetadataInheritance', () => {
     expect(api.groups![0].groups![0].demoMetadata).toEqual({
       type: 'color-swatch',
       background: 'dark',
+    });
+  });
+});
+
+describe('context overrides', () => {
+  const knownProps = new Set([
+    '--sky-theme-color-text-default',
+    '--sky-theme-color-text-on_status',
+    '--sky-theme-color-background-danger',
+  ]);
+
+  const danger = makeStyle({
+    className: 'sky-theme-container-danger',
+    properties: {
+      'background-color': 'var(--sky-theme-color-background-danger)',
+    },
+    contextOverrides: {
+      '--sky-ctx-override-text-color': 'var(--sky-theme-color-text-on_status)',
+      '--sky-ctx-override-icon-color': 'var(--sky-theme-color-text-on_status)',
+    },
+  });
+
+  describe('collectContextOverrideNames', () => {
+    it('should collect override names from top-level and grouped styles', () => {
+      const names = collectContextOverrideNames({
+        styles: [danger],
+        groups: [
+          {
+            name: 'Group',
+            groups: [
+              {
+                name: 'Nested',
+                styles: [
+                  makeStyle({
+                    className: 'sky-theme-container-info',
+                    contextOverrides: {
+                      '--sky-ctx-override-link-color':
+                        'var(--sky-theme-color-text-default)',
+                    },
+                  }),
+                ],
+              },
+            ],
+          },
+        ],
+      });
+
+      expect([...names]).toEqual([
+        '--sky-ctx-override-text-color',
+        '--sky-ctx-override-icon-color',
+        '--sky-ctx-override-link-color',
+      ]);
+    });
+
+    it('should add to an existing set', () => {
+      const names = new Set(['--sky-ctx-override-existing']);
+      collectContextOverrideNames({ styles: [danger] }, names);
+      expect(names.size).toBe(3);
+    });
+  });
+
+  describe('generatePublicStylesCss', () => {
+    it('should emit context overrides after properties', () => {
+      expect(generatePublicStylesCss({ styles: [danger] })).toBe(
+        `.sky-theme-container-danger {
+  background-color: var(--sky-theme-color-background-danger);
+  --sky-ctx-override-text-color: var(--sky-theme-color-text-on_status);
+  --sky-ctx-override-icon-color: var(--sky-theme-color-text-on_status);
+}
+`,
+      );
+    });
+
+    it('should emit a rule for a style with only context overrides', () => {
+      const css = generatePublicStylesCss({
+        styles: [
+          makeStyle({
+            className: 'sky-theme-container-header',
+            contextOverrides: {
+              '--sky-ctx-override-text-color':
+                'var(--sky-theme-color-text-default)',
+            },
+          }),
+        ],
+      });
+
+      expect(css).toContain('.sky-theme-container-header {');
+    });
+
+    it('should reset every declared override, sorted by name', () => {
+      const css = generatePublicStylesCss({
+        styles: [
+          makeStyle({
+            className: 'sky-theme-container-default',
+            properties: { color: 'var(--sky-theme-color-text-default)' },
+            resetContextOverrides: true,
+          }),
+          danger,
+        ],
+      });
+
+      expect(css).toContain(`.sky-theme-container-default {
+  color: var(--sky-theme-color-text-default);
+  --sky-ctx-override-icon-color: initial;
+  --sky-ctx-override-text-color: initial;
+}`);
+    });
+
+    it('should not reset overrides the resetting style sets itself', () => {
+      const css = generatePublicStylesCss({
+        styles: [
+          danger,
+          makeStyle({
+            className: 'sky-theme-container-prominent-header',
+            contextOverrides: {
+              '--sky-ctx-override-text-color':
+                'var(--sky-theme-color-text-default)',
+            },
+            resetContextOverrides: true,
+          }),
+        ],
+      });
+
+      expect(css).toContain(`.sky-theme-container-prominent-header {
+  --sky-ctx-override-text-color: var(--sky-theme-color-text-default);
+  --sky-ctx-override-icon-color: initial;
+}`);
+    });
+
+    it('should reset overrides declared in other groups', () => {
+      const css = generatePublicStylesCss({
+        groups: [
+          {
+            name: 'Default',
+            styles: [
+              makeStyle({
+                className: 'sky-theme-container-default',
+                resetContextOverrides: true,
+              }),
+            ],
+          },
+          { name: 'Status', styles: [danger] },
+        ],
+      });
+
+      expect(css).toContain(`.sky-theme-container-default {
+  --sky-ctx-override-icon-color: initial;
+  --sky-ctx-override-text-color: initial;
+}`);
+    });
+
+    it('should not emit an empty rule when there is nothing to reset', () => {
+      const css = generatePublicStylesCss({
+        styles: [
+          makeStyle({
+            className: 'sky-theme-container-default',
+            resetContextOverrides: true,
+          }),
+        ],
+      });
+
+      expect(css).toBe('');
+    });
+
+    it('should emit context overrides for selectors', () => {
+      const css = generatePublicStylesCss({
+        styles: [
+          makeStyle({
+            name: 'Danger',
+            selectors: ['.foo'],
+            contextOverrides: {
+              '--sky-ctx-override-text-color':
+                'var(--sky-theme-color-text-default)',
+            },
+          }),
+        ],
+      });
+
+      expect(css).toBe(`.foo {
+  --sky-ctx-override-text-color: var(--sky-theme-color-text-default);
+}
+`);
+    });
+  });
+
+  describe('validatePublicStylesCssProperties', () => {
+    const declared = new Set(['--sky-ctx-override-text-color']);
+
+    function validate(style: PublicApiStyle, declaredOverrides = declared) {
+      return () => {
+        validatePublicStylesCssProperties(
+          { styles: [style] },
+          knownProps,
+          'test-set',
+          declaredOverrides,
+        );
+      };
+    }
+
+    it('should accept valid context overrides', () => {
+      expect(validate(danger)).not.toThrow();
+    });
+
+    it('should accept a declared context override reference with a fallback', () => {
+      expect(
+        validate(
+          makeStyle({
+            className: 'sky-theme-font-body',
+            properties: {
+              color:
+                'var(--sky-ctx-override-text-color, var(--sky-theme-color-text-default))',
+            },
+          }),
+        ),
+      ).not.toThrow();
+    });
+
+    it('should reject a context override reference no style declares', () => {
+      expect(
+        validate(
+          makeStyle({
+            className: 'sky-theme-font-body',
+            properties: {
+              color:
+                'var(--sky-ctx-override-link-color, var(--sky-theme-color-text-default))',
+            },
+          }),
+        ),
+      ).toThrow(
+        '.sky-theme-font-body: "--sky-ctx-override-link-color" is not declared in any "contextOverrides"',
+      );
+    });
+
+    it('should reject a context override reference without a fallback', () => {
+      expect(
+        validate(
+          makeStyle({
+            className: 'sky-theme-font-body',
+            properties: { color: 'var(--sky-ctx-override-text-color)' },
+          }),
+        ),
+      ).toThrow(
+        '.sky-theme-font-body: "--sky-ctx-override-text-color" must have a fallback value',
+      );
+    });
+
+    it('should still validate the fallback of a context override reference', () => {
+      expect(
+        validate(
+          makeStyle({
+            className: 'sky-theme-font-body',
+            properties: {
+              color:
+                'var(--sky-ctx-override-text-color, var(--sky-theme-unknown))',
+            },
+          }),
+        ),
+      ).toThrow('"--sky-theme-unknown" is not defined in publicTokens');
+    });
+
+    it('should reject context overrides set in properties', () => {
+      expect(
+        validate(
+          makeStyle({
+            className: 'sky-theme-container-danger',
+            properties: {
+              '--sky-ctx-override-text-color':
+                'var(--sky-theme-color-text-default)',
+            },
+          }),
+        ),
+      ).toThrow(
+        '"--sky-ctx-override-text-color" must be set in "contextOverrides", not "properties"',
+      );
+    });
+
+    it('should reject context overrides without the prefix', () => {
+      expect(
+        validate(
+          makeStyle({
+            className: 'sky-theme-container-danger',
+            contextOverrides: {
+              '--sky-comp-override-text-color':
+                'var(--sky-theme-color-text-default)',
+            },
+          }),
+        ),
+      ).toThrow(
+        'context override "--sky-comp-override-text-color" must start with "--sky-ctx-override-"',
+      );
+    });
+
+    it('should reject context override values that reference non-public properties', () => {
+      expect(
+        validate(
+          makeStyle({
+            className: 'sky-theme-container-danger',
+            contextOverrides: {
+              '--sky-ctx-override-text-color': 'var(--sky-color-text-default)',
+            },
+          }),
+        ),
+      ).toThrow(
+        'context override "--sky-ctx-override-text-color" references "--sky-color-text-default", which is not defined in publicTokens',
+      );
+    });
+
+    it('should reject context override values that reference other context overrides', () => {
+      expect(
+        validate(
+          makeStyle({
+            className: 'sky-theme-container-danger',
+            contextOverrides: {
+              '--sky-ctx-override-icon-color':
+                'var(--sky-ctx-override-text-color)',
+            },
+          }),
+        ),
+      ).toThrow('which is not defined in publicTokens');
+    });
+
+    it('should reject context overrides without a className or selectors', () => {
+      expect(
+        validate(
+          makeStyle({
+            name: 'Old container',
+            deprecatedClassNames: ['sky-old-container'],
+            contextOverrides: {
+              '--sky-ctx-override-text-color':
+                'var(--sky-theme-color-text-default)',
+            },
+          }),
+        ),
+      ).toThrow('has "contextOverrides" but no "className" or "selectors"');
+    });
+
+    it('should reject resetContextOverrides without a className or selectors', () => {
+      expect(
+        validate(
+          makeStyle({
+            name: 'Old container',
+            deprecatedClassNames: ['sky-old-container'],
+            resetContextOverrides: true,
+          }),
+        ),
+      ).toThrow(
+        'has "resetContextOverrides" but no "className" or "selectors"',
+      );
+    });
+  });
+
+  describe('public API JSON', () => {
+    it('should leave out contextOverrides and resetContextOverrides', () => {
+      const target: PublicApiStyles = {};
+      mergePublicApiStylesResults(target, {
+        styles: [{ ...danger, resetContextOverrides: true }],
+      });
+
+      expect(target.styles?.[0]).toEqual({
+        name: 'sky-theme-container-danger',
+        className: 'sky-theme-container-danger',
+        properties: {
+          'background-color': 'var(--sky-theme-color-background-danger)',
+        },
+      });
+    });
+
+    it('should replace context override references with their fallbacks', () => {
+      const target: PublicApiStyles = {};
+      mergePublicApiStylesResults(target, {
+        groups: [
+          {
+            name: 'Typography',
+            styles: [
+              makeStyle({
+                className: 'sky-theme-font-body',
+                properties: {
+                  color:
+                    'var(--sky-ctx-override-text-color, var(--sky-theme-color-text-default))',
+                  border:
+                    '1px solid var( --sky-ctx-override-border-color , var(--sky-ctx-override-text-color, var(--sky-theme-color-text-default)) )',
+                },
+              }),
+            ],
+          },
+        ],
+      });
+
+      expect(target.groups?.[0].styles?.[0].properties).toEqual({
+        color: 'var(--sky-theme-color-text-default)',
+        border: '1px solid var(--sky-theme-color-text-default)',
+      });
+    });
+
+    it('should not modify the source styles', () => {
+      const source: PublicApiStyles = { styles: [danger] };
+      mergePublicApiStylesResults({}, source);
+
+      expect(source.styles?.[0].contextOverrides).toBeDefined();
+    });
+
+    it('should keep context overrides when merging for CSS', () => {
+      const target: PublicApiStyles = {};
+      mergePublicApiStylesResultsForCss(target, { styles: [danger] });
+
+      expect(target.styles?.[0].contextOverrides).toEqual(
+        danger.contextOverrides,
+      );
     });
   });
 });

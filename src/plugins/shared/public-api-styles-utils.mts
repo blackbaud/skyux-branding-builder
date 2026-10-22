@@ -3,28 +3,40 @@ import { PublicApiStyle } from '../../types/public-api-style.js';
 import { PublicApiStyleGroup } from '../../types/public-api-style-group.js';
 import { PublicApiStyles } from '../../types/public-api-styles.js';
 
+export const CONTEXT_OVERRIDE_PREFIX = '--sky-ctx-override-';
+
+interface CustomPropertyReference {
+  name: string;
+  hasFallback: boolean;
+}
+
 export function generatePublicStylesCss(
   publicApiStyles: PublicApiStyles,
 ): string {
   const styles = collectAllStyles(publicApiStyles);
+  const contextOverrideNames = [
+    ...collectContextOverrideNames(publicApiStyles),
+  ].sort();
   const lines: string[] = [];
   const seen = new Set<string>();
 
   for (const style of styles) {
-    if (style.className && style.properties) {
-      const rule = buildRule(`.${style.className}`, style.properties);
+    const declarations = getStyleDeclarations(style, contextOverrideNames);
+    if (!declarations) {
+      continue;
+    }
+    if (style.className) {
+      const rule = buildRule(`.${style.className}`, declarations);
       if (!seen.has(rule)) {
         seen.add(rule);
         lines.push(rule);
       }
     }
-    if (style.selectors && style.selectors.length > 0 && style.properties) {
-      for (const sel of style.selectors) {
-        const rule = buildRule(sel, style.properties);
-        if (!seen.has(rule)) {
-          seen.add(rule);
-          lines.push(rule);
-        }
+    for (const sel of style.selectors ?? []) {
+      const rule = buildRule(sel, declarations);
+      if (!seen.has(rule)) {
+        seen.add(rule);
+        lines.push(rule);
       }
     }
   }
@@ -34,18 +46,41 @@ export function generatePublicStylesCss(
   return lines.join('\n');
 }
 
+/**
+ * Collects the names of all context overrides declared by the given styles.
+ */
+export function collectContextOverrideNames(
+  publicApiStyles: PublicApiStyles,
+  result = new Set<string>(),
+): Set<string> {
+  for (const style of collectAllStyles(publicApiStyles)) {
+    for (const name of Object.keys(style.contextOverrides ?? {})) {
+      result.add(name);
+    }
+  }
+  return result;
+}
+
+/**
+ * Validates the custom property references in the given styles. `declaredContextOverrides`
+ * holds the context overrides declared across all style sets, since a style may read an
+ * override that a style in another set declares.
+ */
 export function validatePublicStylesCssProperties(
   publicApiStyles: PublicApiStyles,
   knownCssProperties: Set<string>,
   setName: string,
+  declaredContextOverrides = new Set<string>(),
 ): void {
   const errors: string[] = [];
 
-  for (const style of publicApiStyles.styles ?? []) {
-    checkStyleCssProperties(style, knownCssProperties, errors);
-  }
-  for (const group of publicApiStyles.groups ?? []) {
-    walkGroupCssProperties(group, knownCssProperties, errors);
+  for (const style of collectAllStyles(publicApiStyles)) {
+    checkStyleCssProperties(
+      style,
+      knownCssProperties,
+      declaredContextOverrides,
+      errors,
+    );
   }
 
   if (errors.length) {
@@ -112,6 +147,24 @@ function applyGroupDemoMetadata(
       applyGroupDemoMetadata(subgroup, accumulated);
     }
   }
+}
+
+function getStyleDeclarations(
+  style: PublicApiStyle,
+  contextOverrideNames: string[],
+): Record<string, string> | undefined {
+  const declarations: Record<string, string> = {
+    ...style.properties,
+    ...style.contextOverrides,
+  };
+
+  if (style.resetContextOverrides) {
+    for (const name of contextOverrideNames) {
+      declarations[name] ??= 'initial';
+    }
+  }
+
+  return Object.keys(declarations).length ? declarations : undefined;
 }
 
 function buildRule(
@@ -198,49 +251,130 @@ function mergePublicApiStyleGroupArrays(
 function checkStyleCssProperties(
   style: PublicApiStyle,
   knownCssProperties: Set<string>,
+  declaredContextOverrides: Set<string>,
   errors: string[],
 ): void {
   const hasClassName = !!style.className;
   const hasSelectors = !!(style.selectors && style.selectors.length > 0);
 
   if (!hasClassName && !hasSelectors) {
-    if (style.properties) {
+    const field = style.properties
+      ? 'properties'
+      : style.contextOverrides
+        ? 'contextOverrides'
+        : style.resetContextOverrides
+          ? 'resetContextOverrides'
+          : undefined;
+    if (field) {
       const label = styleLabel(style);
       errors.push(
-        `  ${label}: has "properties" but no "className" or "selectors"; CSS cannot be generated for this entry`,
+        `  ${label}: has "${field}" but no "className" or "selectors"; CSS cannot be generated for this entry`,
       );
     }
     return;
   }
 
-  if (!style.properties) {
-    return;
-  }
   const label = hasClassName ? `.${style.className}` : styleLabel(style);
-  for (const value of Object.values(style.properties)) {
+
+  for (const [prop, value] of Object.entries(style.properties ?? {})) {
+    if (prop.startsWith(CONTEXT_OVERRIDE_PREFIX)) {
+      errors.push(
+        `  ${label}: "${prop}" must be set in "contextOverrides", not "properties"`,
+      );
+    }
     for (const ref of extractCustomPropertyReferences(value)) {
-      if (!knownCssProperties.has(ref)) {
-        errors.push(`  ${label}: "${ref}" is not defined in publicTokens`);
+      if (!ref.name.startsWith(CONTEXT_OVERRIDE_PREFIX)) {
+        if (!knownCssProperties.has(ref.name)) {
+          errors.push(
+            `  ${label}: "${ref.name}" is not defined in publicTokens`,
+          );
+        }
+      } else if (!declaredContextOverrides.has(ref.name)) {
+        errors.push(
+          `  ${label}: "${ref.name}" is not declared in any "contextOverrides"`,
+        );
+      } else if (!ref.hasFallback) {
+        errors.push(
+          `  ${label}: "${ref.name}" must have a fallback value, since context overrides are unset outside a container`,
+        );
+      }
+    }
+  }
+
+  for (const [prop, value] of Object.entries(style.contextOverrides ?? {})) {
+    if (!prop.startsWith(CONTEXT_OVERRIDE_PREFIX)) {
+      errors.push(
+        `  ${label}: context override "${prop}" must start with "${CONTEXT_OVERRIDE_PREFIX}"`,
+      );
+    }
+    for (const ref of extractCustomPropertyReferences(value)) {
+      if (!knownCssProperties.has(ref.name)) {
+        errors.push(
+          `  ${label}: context override "${prop}" references "${ref.name}", which is not defined in publicTokens`,
+        );
       }
     }
   }
 }
 
-function walkGroupCssProperties(
-  group: PublicApiStyleGroup,
-  knownCssProperties: Set<string>,
-  errors: string[],
-): void {
-  for (const style of group.styles ?? []) {
-    checkStyleCssProperties(style, knownCssProperties, errors);
-  }
-  for (const subgroup of group.groups ?? []) {
-    walkGroupCssProperties(subgroup, knownCssProperties, errors);
-  }
+function extractCustomPropertyReferences(
+  value: string,
+): CustomPropertyReference[] {
+  return [...value.matchAll(/var\(\s*(--[^,)\s]+)\s*(,)?/g)].map((m) => ({
+    name: m[1],
+    hasFallback: !!m[2],
+  }));
 }
 
-function extractCustomPropertyReferences(value: string): string[] {
-  return [...value.matchAll(/var\(\s*(--[^,)]+)/g)].map((m) => m[1].trim());
+/**
+ * Replaces each `var(--sky-ctx-override-*, <fallback>)` with its fallback, so the public API
+ * JSON shows the value consumers get outside a container.
+ */
+function removeContextOverrideReferences(value: string): string {
+  const pattern = new RegExp(
+    `var\\(\\s*${CONTEXT_OVERRIDE_PREFIX}[^,)\\s]*\\s*,`,
+    'g',
+  );
+  let result = value;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(result))) {
+    const fallbackStart = match.index + match[0].length;
+    let depth = 1;
+    let end = fallbackStart;
+    while (end < result.length && depth > 0) {
+      if (result[end] === '(') {
+        depth++;
+      } else if (result[end] === ')') {
+        depth--;
+      }
+      end++;
+    }
+    if (depth > 0) {
+      break;
+    }
+    const fallback = result.slice(fallbackStart, end - 1).trim();
+    result = result.slice(0, match.index) + fallback + result.slice(end);
+    // The fallback may itself contain a context override reference.
+    pattern.lastIndex = match.index;
+  }
+
+  return result;
+}
+
+function toDocsStyle(style: PublicApiStyle): PublicApiStyle {
+  const docsStyle = { ...style };
+  delete docsStyle.contextOverrides;
+  delete docsStyle.resetContextOverrides;
+  if (docsStyle.properties) {
+    docsStyle.properties = Object.fromEntries(
+      Object.entries(docsStyle.properties).map(([prop, value]) => [
+        prop,
+        removeContextOverrideReferences(value),
+      ]),
+    );
+  }
+  return docsStyle;
 }
 
 function stableStyleKey(style: PublicApiStyle): string {
@@ -269,7 +403,8 @@ function mergeStyleArrays(
       (includeExcluded || !style.excludeFromDocs) &&
       !target.some((c) => stableStyleKey(c) === stableStyleKey(style))
     ) {
-      target.push(style);
+      // The public API JSON never exposes context overrides.
+      target.push(includeExcluded ? style : toDocsStyle(style));
     }
   }
 }

@@ -1,0 +1,11 @@
+{
+  "styles": [
+    {
+      "name": "Body text",
+      "className": "sky-theme-font-body",
+      "properties": {
+        "color": "var(--sky-ctx-override-text-color, var(--sky-theme-color-text-default))"
+      }
+    }
+  ]
+}

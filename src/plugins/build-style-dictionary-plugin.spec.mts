@@ -1113,6 +1113,194 @@ describe('buildStyleDictionaryPlugin', () => {
     );
   });
 
+  it('should accept context override references declared in another publicStyles set', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'rainbow.css',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+          publicTokens: [
+            {
+              name: 'public-colors',
+              path: 'public-colors.json',
+              docsPath: 'public-colors-docs.json',
+            },
+          ],
+          publicStyles: [
+            {
+              name: 'public-classes-context-override-refs',
+              path: 'public-classes-context-override-refs.json',
+            },
+            {
+              name: 'public-classes-context-overrides',
+              path: 'public-classes-context-overrides.json',
+            },
+          ],
+        },
+      ],
+    };
+    vi.spyOn(assetsUtils, 'generateAssetsCss').mockResolvedValue('');
+    const plugin = buildStyleDictionaryPlugin(tokenConfig);
+    const emitFileSpy = vi.fn();
+    await callGenerateBundle(plugin, emitFileSpy);
+
+    expect(emitFileSpy).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'bundles/public-api.css',
+      source: `.sky-theme-rainbow {
+  /** The background color for danger elements. */
+  --sky-theme-color-background-danger: var(--sky-color-background-danger);
+  /** The default text color. */
+  --sky-theme-color-text-default: var(--sky-color-text-default);
+}
+.sky-theme-font-body {
+  color: var(--sky-ctx-override-text-color, var(--sky-theme-color-text-default));
+}
+.sky-theme-container-danger {
+  background-color: var(--sky-theme-color-background-danger);
+  --sky-ctx-override-text-color: var(--sky-theme-color-text-default);
+}
+.sky-theme-container-default {
+  --sky-ctx-override-text-color: initial;
+}
+`,
+    });
+  });
+
+  it('should leave context overrides out of the public API styles JSON', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'rainbow.css',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+          publicTokens: [
+            {
+              name: 'public-colors',
+              path: 'public-colors.json',
+              docsPath: 'public-colors-docs.json',
+            },
+          ],
+          publicStyles: [
+            {
+              name: 'public-classes-context-override-refs',
+              path: 'public-classes-context-override-refs.json',
+            },
+            {
+              name: 'public-classes-context-overrides',
+              path: 'public-classes-context-overrides.json',
+            },
+          ],
+        },
+      ],
+    };
+    vi.spyOn(assetsUtils, 'generateAssetsCss').mockResolvedValue('');
+    const plugin = buildStyleDictionaryPlugin(tokenConfig);
+    const emitFileSpy = vi.fn();
+    await callGenerateBundle(plugin, emitFileSpy);
+
+    expect(emitFileSpy).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'bundles/public-api-styles.json',
+      source: JSON.stringify(
+        {
+          styles: [
+            {
+              name: 'Body text',
+              className: 'sky-theme-font-body',
+              properties: { color: 'var(--sky-theme-color-text-default)' },
+            },
+          ],
+          groups: [
+            {
+              name: 'Containers',
+              groups: [
+                {
+                  name: 'Containers',
+                  styles: [
+                    {
+                      name: 'Danger container',
+                      className: 'sky-theme-container-danger',
+                      properties: {
+                        'background-color':
+                          'var(--sky-theme-color-background-danger)',
+                      },
+                    },
+                    {
+                      name: 'Default container',
+                      className: 'sky-theme-container-default',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    });
+  });
+
+  it('should throw when a class references a context override no publicStyles set declares', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'rainbow.css',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+          publicTokens: [
+            {
+              name: 'public-colors',
+              path: 'public-colors.json',
+              docsPath: 'public-colors-docs.json',
+            },
+          ],
+          publicStyles: [
+            {
+              name: 'public-classes-context-override-refs',
+              path: 'public-classes-context-override-refs.json',
+            },
+          ],
+        },
+      ],
+    };
+    vi.spyOn(assetsUtils, 'generateAssetsCss').mockResolvedValue('');
+    const plugin = buildStyleDictionaryPlugin(tokenConfig);
+    const emitFileSpy = vi.fn();
+    await expect(callGenerateBundle(plugin, emitFileSpy)).rejects.toThrow(
+      'Invalid CSS custom property references in "public-classes-context-override-refs":\n  .sky-theme-font-body: "--sky-ctx-override-text-color" is not declared in any "contextOverrides"',
+    );
+  });
+
   it('should accept classes that reference custom properties defined in publicTokens', async () => {
     const tokenConfig: TokenConfig = {
       rootPath: 'src/plugins/fixtures/',
