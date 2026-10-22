@@ -275,17 +275,15 @@ function checkStyleCssProperties(
       );
     }
     for (const ref of extractCustomPropertyReferences(value)) {
-      if (!ref.name.startsWith(CONTEXT_OVERRIDE_PREFIX)) {
-        if (!knownCssProperties.has(ref.name)) {
-          errors.push(
-            `  ${label}: "${ref.name}" is not defined in publicTokens`,
-          );
-        }
-      } else if (!declaredContextOverrides.has(ref.name)) {
+      const isContextOverride = ref.name.startsWith(CONTEXT_OVERRIDE_PREFIX);
+
+      if (!isContextOverride && !knownCssProperties.has(ref.name)) {
+        errors.push(`  ${label}: "${ref.name}" is not defined in publicTokens`);
+      } else if (isContextOverride && !declaredContextOverrides.has(ref.name)) {
         errors.push(
           `  ${label}: "${ref.name}" is not declared in any "contextOverrides"`,
         );
-      } else if (!ref.hasFallback) {
+      } else if (isContextOverride && !ref.hasFallback) {
         errors.push(
           `  ${label}: "${ref.name}" must have a fallback value, since context overrides are unset outside a container`,
         );
