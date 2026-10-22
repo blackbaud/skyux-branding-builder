@@ -1385,6 +1385,20 @@ describe('context overrides', () => {
       );
     });
 
+    it('should accept a fallback separated by whitespace', () => {
+      expect(
+        validate(
+          makeStyle({
+            className: 'sky-theme-font-body',
+            properties: {
+              color:
+                'var( --sky-ctx-override-text-color , var(--sky-theme-color-text-default))',
+            },
+          }),
+        ),
+      ).not.toThrow();
+    });
+
     it('should reject a context override reference without a fallback', () => {
       expect(
         validate(
@@ -1470,7 +1484,9 @@ describe('context overrides', () => {
             },
           }),
         ),
-      ).toThrow('which is not defined in publicTokens');
+      ).toThrow(
+        'context override "--sky-ctx-override-icon-color" references "--sky-ctx-override-text-color", which is not defined in publicTokens',
+      );
     });
 
     it('should reject context overrides without a className or selectors', () => {
