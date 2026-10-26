@@ -25,10 +25,18 @@ function transformAssetsJson(code: string, projectName: string): string | null {
 
     // Resolve asset paths in images
     if (assetsConfig.images) {
-      for (const imageConfig of Object.values(
-        assetsConfig.images,
-      ) as AssetsImageConfig[]) {
-        imageConfig.src = transformSrc(imageConfig.src, projectName);
+      for (const imageEntry of Object.values(assetsConfig.images) as (
+        | AssetsImageConfig
+        | AssetsImageConfig[]
+      )[]) {
+        // Some entries (e.g. manifestIcons) are lists of images
+        const imageConfigs = Array.isArray(imageEntry)
+          ? imageEntry
+          : [imageEntry];
+
+        for (const imageConfig of imageConfigs) {
+          imageConfig.src = transformSrc(imageConfig.src, projectName);
+        }
       }
     }
 

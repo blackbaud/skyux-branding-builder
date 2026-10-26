@@ -300,6 +300,174 @@ describe('build-assets-manifest-plugin', () => {
       expectEmittedFile(emitFileSpy, 'assets/assets.json', expectedConfig);
     });
 
+    it('should transform appleTouchIcon and manifestIcons image paths', async () => {
+      const assetsConfig: AssetsConfig = {
+        fonts: [],
+        images: {
+          appleTouchIcon: {
+            src: '~/assets/images/apple-touch-icon.png',
+          },
+          favicon: {
+            src: '~/assets/images/favicon.ico',
+          },
+          manifestIcons: [
+            {
+              src: '~/assets/images/icon-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '~/assets/images/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '~/assets/images/icon-maskable-512.png',
+              sizes: '512x512',
+              purpose: 'maskable',
+            },
+          ],
+        },
+        strings: {
+          title: 'Blackbaud',
+        },
+      };
+
+      const { emitFileSpy } = await testPluginWithAssetsConfig(
+        assetsConfig,
+        [
+          '/base/assets/images/apple-touch-icon.png',
+          '/base/assets/images/favicon.ico',
+          '/base/assets/images/icon-192.png',
+          '/base/assets/images/icon-512.png',
+          '/base/assets/images/icon-maskable-512.png',
+        ],
+        [
+          { basePath: './', url: '~/assets/images/apple-touch-icon.png' },
+          { basePath: './', url: '~/assets/images/favicon.ico' },
+          { basePath: './', url: '~/assets/images/icon-192.png' },
+          { basePath: './', url: '~/assets/images/icon-512.png' },
+          { basePath: './', url: '~/assets/images/icon-maskable-512.png' },
+        ],
+      );
+
+      const expectedConfig: AssetsConfig = {
+        fonts: [],
+        images: {
+          appleTouchIcon: {
+            src: '/base/assets/images/apple-touch-icon.png',
+          },
+          favicon: {
+            src: '/base/assets/images/favicon.ico',
+          },
+          manifestIcons: [
+            {
+              src: '/base/assets/images/icon-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '/base/assets/images/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '/base/assets/images/icon-maskable-512.png',
+              sizes: '512x512',
+              purpose: 'maskable',
+            },
+          ],
+        },
+        strings: {
+          title: 'Blackbaud',
+        },
+      };
+
+      expectEmittedFile(emitFileSpy, 'assets/assets.json', expectedConfig);
+    });
+
+    it('should leave non-~/assets manifestIcons paths unchanged', async () => {
+      const { plugin, emitFileSpy, mockFixAssetsUrl } = createTestSetup();
+      const assetsConfig: AssetsConfig = {
+        images: {
+          favicon: {
+            src: 'https://cdn.example.com/favicon.ico',
+          },
+          manifestIcons: [
+            {
+              src: 'https://cdn.example.com/icon-192.png',
+              sizes: '192x192',
+            },
+            {
+              src: '~/assets/images/icon-512.png',
+              sizes: '512x512',
+            },
+          ],
+        },
+      };
+
+      mockFixAssetsUrl.mockReturnValue('/base/assets/images/icon-512.png');
+      setupFileSystemMocks(true, JSON.stringify(assetsConfig));
+      await executePluginGenerateBundle(plugin, emitFileSpy);
+
+      expect(mockFixAssetsUrl).toHaveBeenCalledTimes(1);
+      expect(mockFixAssetsUrl).toHaveBeenCalledWith(
+        './',
+        '~/assets/images/icon-512.png',
+        'skyux-brand-test',
+      );
+
+      const expectedConfig: AssetsConfig = {
+        images: {
+          favicon: {
+            src: 'https://cdn.example.com/favicon.ico',
+          },
+          manifestIcons: [
+            {
+              src: 'https://cdn.example.com/icon-192.png',
+              sizes: '192x192',
+            },
+            {
+              src: '/base/assets/images/icon-512.png',
+              sizes: '512x512',
+            },
+          ],
+        },
+      };
+
+      expectEmittedFile(emitFileSpy, 'assets/assets.json', expectedConfig);
+    });
+
+    it('should handle an empty manifestIcons array', async () => {
+      const assetsConfig: AssetsConfig = {
+        images: {
+          favicon: {
+            src: '~/assets/images/favicon.ico',
+          },
+          manifestIcons: [],
+        },
+      };
+
+      const { emitFileSpy } = await testPluginWithAssetsConfig(
+        assetsConfig,
+        '/base/assets/images/favicon.ico',
+        [{ basePath: './', url: '~/assets/images/favicon.ico' }],
+      );
+
+      expectEmittedFile(emitFileSpy, 'assets/assets.json', {
+        images: {
+          favicon: {
+            src: '/base/assets/images/favicon.ico',
+          },
+          manifestIcons: [],
+        },
+      });
+    });
+
     it('should handle invalid JSON gracefully', async () => {
       await testErrorScenario(
         true,
