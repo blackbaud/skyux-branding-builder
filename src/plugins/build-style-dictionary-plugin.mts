@@ -24,6 +24,7 @@ import {
 } from './shared/public-api-tokens-utils.mjs';
 import {
   applyStylesDemoMetadataInheritance,
+  collectContextOverrideNames,
   generatePublicStylesCss,
   mergePublicApiStylesResults,
   mergePublicApiStylesResultsForCss,
@@ -169,22 +170,36 @@ async function generateDictionaryFiles(
           collectPublicTokenCustomProperties(parsed, knownCustomProperties);
         }
 
-        const classResults = await Promise.all(
+        const styleSets = await Promise.all(
           tokenSet.publicStyles.map(async (publicStyleSet) => {
             const json = await readFile(
               path.join(process.cwd(), `${rootPath}${publicStyleSet.path}`),
               'utf-8',
             );
-            const publicApiStyles = JSON.parse(json) as PublicApiStyles;
-            validatePublicStylesCssProperties(
-              publicApiStyles,
-              knownCustomProperties,
-              publicStyleSet.name,
-            );
-            return JSON.stringify(publicApiStyles);
+            return {
+              name: publicStyleSet.name,
+              publicApiStyles: JSON.parse(json) as PublicApiStyles,
+            };
           }),
         );
-        publicClassJsonFiles.push(...classResults);
+
+        const declaredContextOverrides = new Set<string>();
+        for (const { publicApiStyles } of styleSets) {
+          collectContextOverrideNames(
+            publicApiStyles,
+            declaredContextOverrides,
+          );
+        }
+
+        for (const { name, publicApiStyles } of styleSets) {
+          validatePublicStylesCssProperties(
+            publicApiStyles,
+            knownCustomProperties,
+            name,
+            declaredContextOverrides,
+          );
+          publicClassJsonFiles.push(JSON.stringify(publicApiStyles));
+        }
       }
 
       return {
