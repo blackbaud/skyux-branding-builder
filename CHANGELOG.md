@@ -1,3 +1,6 @@
+# 5.2.0 (2026-10-26)
+- Support context overrides on public API styles. [#15](https://github.com/blackbaud/skyux-branding-builder/pull/15)
+
 # 5.1.0 (2026-08-03)
 - Support scoping tokens to the root element. [#14](https://github.com/blackbaud/skyux-branding-builder/pull/14)
 
