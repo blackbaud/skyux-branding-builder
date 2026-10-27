@@ -1,3 +1,6 @@
+# 5.3.0 (2026-10-27)
+- Support additional icons. [#17](https://github.com/blackbaud/skyux-branding-builder/pull/17)
+
 # 5.2.0 (2026-10-26)
 - Support context overrides on public API styles. [#15](https://github.com/blackbaud/skyux-branding-builder/pull/15)
 
