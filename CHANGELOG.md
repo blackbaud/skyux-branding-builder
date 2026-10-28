@@ -1,3 +1,6 @@
+# 5.4.0 (2026-10-28)
+- Support demo content on demo metadata. [#19](https://github.com/blackbaud/skyux-branding-builder/pull/19)
+
 # 5.3.0 (2026-10-27)
 - Support additional icons. [#17](https://github.com/blackbaud/skyux-branding-builder/pull/17)
 
