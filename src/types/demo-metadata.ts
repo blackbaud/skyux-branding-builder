@@ -15,6 +15,8 @@ export interface DemoMetadata {
     | 'text-color';
   /** Describes how the demo is rendered, independently of what it demonstrates, if different from standard. */
   renderAs?: 'element' | 'multi-prop';
+  /** The sample elements a container demo shows, in order. */
+  content?: ('body' | 'body-with-link' | 'heading' | 'icon' | 'icon-button')[];
   background?: string;
   color?: string;
   text?: string;

@@ -1034,6 +1034,30 @@ describe('applyStylesDemoMetadataInheritance', () => {
     });
   });
 
+  it('should replace group demo content with style demo content', () => {
+    const api: PublicApiStyles = {
+      groups: [
+        {
+          name: 'Containers',
+          demoMetadata: { type: 'container', content: ['body', 'icon'] },
+          styles: [
+            makeStyle({
+              className: 'sky-theme-a',
+              demoMetadata: { content: ['heading', 'icon-button'] },
+            }),
+          ],
+        },
+      ],
+    };
+
+    applyStylesDemoMetadataInheritance(api);
+
+    expect(api.groups![0].styles![0].demoMetadata).toEqual({
+      type: 'container',
+      content: ['heading', 'icon-button'],
+    });
+  });
+
   it('should inherit demoMetadata from grandparent groups', () => {
     const api: PublicApiStyles = {
       groups: [
