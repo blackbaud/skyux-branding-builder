@@ -2100,6 +2100,142 @@ describe('buildStyleDictionaryPlugin', () => {
     );
   });
 
+  it('should wrap styles with media in @media in the CSS output', async () => {
+    const tokenConfig: TokenConfig = {
+      rootPath: 'src/plugins/fixtures/',
+      projectName: 'skyux-brand-test',
+      tokenSets: [
+        {
+          name: 'rainbow',
+          selector: '.sky-theme-rainbow',
+          path: 'base-rainbow.json',
+          outputPath: 'rainbow.css',
+          referenceTokens: [
+            {
+              name: 'rainbow-colors',
+              path: 'rainbow-colors.json',
+            },
+          ],
+          publicTokens: [
+            {
+              name: 'public-colors',
+              path: 'public-colors.json',
+              docsPath: 'public-colors-docs.json',
+            },
+          ],
+          publicStyles: [
+            {
+              name: 'public-classes-with-media',
+              path: 'public-classes-with-media.json',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expectedEmittedFiles: { fileName: string; source: string }[] = [
+      {
+        fileName: 'assets/scss/rainbow.css',
+        source: `.sky-theme-rainbow {
+  --rainbow-color-gray-1: #e2e3e7;
+  --rainbow-color-gray-2: #c0c2c5;
+  --rainbow-color-red-1: #fc0330;
+  --rainbow-color-red-2: #8a2538;
+  --rainbow-space-s: 10px;
+}
+.sky-theme-rainbow {
+  --sky-color-background-danger: var(--rainbow-color-gray-1);
+  --sky-color-text-default: var(--rainbow-color-red-1);
+}
+`,
+      },
+    ];
+
+    const expectedEmittedPublicApiFile = {
+      source: `.sky-theme-rainbow {
+  /** The background color for danger elements. */
+  --sky-theme-color-background-danger: var(--sky-color-background-danger);
+  /** The default text color. */
+  --sky-theme-color-text-default: var(--sky-color-text-default);
+}
+.sky-theme-text-muted {
+  color: var(--sky-theme-color-text-default);
+}
+@media print {
+  .sky-theme-rainbow {
+    --sky-theme-color-text-default: black;
+  }
+}
+`,
+    };
+
+    const expectedEmittedPublicApiStylesJsonFile = {
+      source: JSON.stringify(
+        {
+          styles: [
+            {
+              name: 'Muted Text Color',
+              className: 'sky-theme-text-muted',
+              description: 'Applies the default text color without emphasis.',
+              properties: { color: 'var(--sky-theme-color-text-default)' },
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    };
+
+    const expectedEmittedPublicApiJsonFile = {
+      source: JSON.stringify(
+        {
+          groups: [
+            {
+              groupName: 'Colors',
+              description: 'All color tokens.',
+              groups: [
+                {
+                  groupName: 'Text Colors',
+                  description: 'Text color tokens.',
+                  tokens: [
+                    {
+                      name: 'Default Text',
+                      customProperty: '--sky-theme-color-text-default',
+                      description: 'The default text color.',
+                      deprecatedCustomProperties: ['--old-text-color'],
+                    },
+                  ],
+                },
+                {
+                  groupName: 'Background Colors',
+                  description: 'Background color tokens.',
+                  tokens: [
+                    {
+                      name: 'Danger Background',
+                      customProperty: '--sky-theme-color-background-danger',
+                      description: 'The background color for danger elements.',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    };
+
+    await validate(
+      tokenConfig,
+      expectedEmittedFiles,
+      undefined,
+      expectedEmittedPublicApiFile,
+      expectedEmittedPublicApiJsonFile,
+      expectedEmittedPublicApiStylesJsonFile,
+    );
+  });
+
   it('should not emit CSS files when the token set has no base path', async () => {
     const tokenConfig: TokenConfig = {
       rootPath: 'src/plugins/fixtures/',

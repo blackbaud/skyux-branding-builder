@@ -229,6 +229,53 @@ describe('generatePublicStylesCss', () => {
     expect(css).toContain('h3 {');
   });
 
+  it('should wrap rules in @media when media is set', () => {
+    const input: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          name: 'Reduced motion',
+          selectors: [':root', '.sky-theme-modern'],
+          media: '(prefers-reduced-motion: reduce)',
+          properties: { '--duration': '1ms' },
+        }),
+      ],
+    };
+
+    const css = generatePublicStylesCss(input);
+
+    expect(css).toBe(
+      [
+        '@media (prefers-reduced-motion: reduce) {',
+        '  :root {',
+        '    --duration: 1ms;',
+        '  }',
+        '}',
+        '@media (prefers-reduced-motion: reduce) {',
+        '  .sky-theme-modern {',
+        '    --duration: 1ms;',
+        '  }',
+        '}',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('should wrap className rules in @media when media is set', () => {
+    const input: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          className: 'sky-theme-print-hidden',
+          media: 'print',
+          properties: { display: 'none' },
+        }),
+      ],
+    };
+
+    const css = generatePublicStylesCss(input);
+
+    expect(css).toContain('@media print {\n  .sky-theme-print-hidden {');
+  });
+
   it('should render both top-level classes and group classes', () => {
     const input: PublicApiStyles = {
       styles: [
@@ -302,6 +349,66 @@ describe('validatePublicStylesCssProperties', () => {
     expect(() => {
       validatePublicStylesCssProperties(input, knownProps, 'test-set');
     }).not.toThrow();
+  });
+
+  it('should not throw for a valid media condition', () => {
+    const input: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          name: 'Reduced motion',
+          selectors: [':root'],
+          media: '(prefers-reduced-motion: reduce)',
+          properties: { '--duration': '1ms' },
+        }),
+      ],
+    };
+
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).not.toThrow();
+  });
+
+  it('should throw when media includes the @media keyword', () => {
+    const input: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          name: 'Reduced motion',
+          selectors: [':root'],
+          media: '@media (prefers-reduced-motion: reduce)',
+          properties: { '--duration': '1ms' },
+        }),
+      ],
+    };
+
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow('"media" must be the query condition only');
+  });
+
+  it('should throw when media is empty', () => {
+    const input: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          className: 'sky-theme-test',
+          media: ' ',
+          properties: { display: 'none' },
+        }),
+      ],
+    };
+
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow('"media" must not be empty');
+  });
+
+  it('should throw when media is set without a className or selectors', () => {
+    const input: PublicApiStyles = {
+      styles: [makeStyle({ name: 'Orphan', media: 'print' })],
+    };
+
+    expect(() => {
+      validatePublicStylesCssProperties(input, knownProps, 'test-set');
+    }).toThrow('Orphan: has "media" but no "className" or "selectors"');
   });
 
   it('should throw for unknown custom property references', () => {
@@ -745,6 +852,48 @@ describe('mergePublicApiStylesResults', () => {
     // Different selectors → distinct entries, not duplicates.
     expect(target.styles).toHaveLength(2);
     expect(target.styles!.map((c) => c.selectors)).toEqual([['button'], ['a']]);
+  });
+
+  it('should not deduplicate entries that differ only by media', () => {
+    const target: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          name: 'Durations',
+          selectors: [':root'],
+          properties: { '--duration': '150ms' },
+        }),
+      ],
+    };
+    const source: PublicApiStyles = {
+      styles: [
+        makeStyle({
+          name: 'Reduced motion',
+          selectors: [':root'],
+          media: '(prefers-reduced-motion: reduce)',
+          properties: { '--duration': '1ms' },
+        }),
+      ],
+    };
+
+    mergePublicApiStylesResultsForCss(target, source);
+
+    expect(target.styles).toHaveLength(2);
+    expect(target.styles![1].media).toBe('(prefers-reduced-motion: reduce)');
+  });
+
+  it('should deduplicate entries with the same selectors and media', () => {
+    const style = makeStyle({
+      name: 'Reduced motion',
+      selectors: [':root'],
+      media: '(prefers-reduced-motion: reduce)',
+      properties: { '--duration': '1ms' },
+    });
+    const target: PublicApiStyles = { styles: [style] };
+    const source: PublicApiStyles = { styles: [{ ...style }] };
+
+    mergePublicApiStylesResultsForCss(target, source);
+
+    expect(target.styles).toHaveLength(1);
   });
 
   it('should not deduplicate className entry and selectors entry sharing the same value', () => {
