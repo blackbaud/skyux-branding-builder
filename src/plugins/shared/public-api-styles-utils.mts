@@ -25,15 +25,12 @@ export function generatePublicStylesCss(
     if (!declarations) {
       continue;
     }
-    if (style.className) {
-      const rule = buildRule(`.${style.className}`, declarations);
-      if (!seen.has(rule)) {
-        seen.add(rule);
-        lines.push(rule);
-      }
-    }
-    for (const sel of style.selectors ?? []) {
-      const rule = buildRule(sel, declarations);
+    const selectors = [
+      ...(style.className ? [`.${style.className}`] : []),
+      ...(style.selectors ?? []),
+    ];
+    for (const sel of selectors) {
+      const rule = buildRule(sel, declarations, style.media);
       if (!seen.has(rule)) {
         seen.add(rule);
         lines.push(rule);
@@ -162,11 +159,17 @@ function getStyleDeclarations(
 function buildRule(
   selector: string,
   properties: Record<string, string>,
+  media?: string,
 ): string {
   const propLines = Object.entries(properties)
     .map(([prop, value]) => `  ${prop}: ${value};`)
     .join('\n');
-  return `${selector} {\n${propLines}\n}`;
+  const rule = `${selector} {\n${propLines}\n}`;
+  if (!media) {
+    return rule;
+  }
+  const indented = rule.replace(/^/gm, '  ');
+  return `@media ${media} {\n${indented}\n}`;
 }
 
 function collectAllStyles(publicApiStyles: PublicApiStyles): PublicApiStyle[] {
@@ -263,10 +266,26 @@ function checkStyleCssProperties(
         `  ${label}: has "${field}" but no "className" or "selectors"; CSS cannot be generated for this entry`,
       );
     }
+    if (!field && style.media !== undefined) {
+      errors.push(
+        `  ${styleLabel(style)}: has "media" but no "className" or "selectors"; CSS cannot be generated for this entry`,
+      );
+    }
     return;
   }
 
   const label = hasClassName ? `.${style.className}` : styleLabel(style);
+
+  if (style.media !== undefined) {
+    const media = style.media.trim();
+    if (!media) {
+      errors.push(`  ${label}: "media" must not be empty`);
+    } else if (media.startsWith('@')) {
+      errors.push(
+        `  ${label}: "media" must be the query condition only, without "@media"`,
+      );
+    }
+  }
 
   for (const [prop, value] of Object.entries(style.properties ?? {})) {
     if (prop.startsWith(CONTEXT_OVERRIDE_PREFIX)) {
@@ -364,6 +383,11 @@ function toDocsStyle(style: PublicApiStyle): PublicApiStyle {
 }
 
 function stableStyleKey(style: PublicApiStyle): string {
+  const key = baseStyleKey(style);
+  return style.media === undefined ? key : `${key}|media:${style.media}`;
+}
+
+function baseStyleKey(style: PublicApiStyle): string {
   if (style.className !== undefined) {
     return `className:${style.className}`;
   }

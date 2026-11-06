@@ -1,0 +1,21 @@
+{
+  "styles": [
+    {
+      "name": "Muted Text Color",
+      "className": "sky-theme-text-muted",
+      "description": "Applies the default text color without emphasis.",
+      "properties": {
+        "color": "var(--sky-theme-color-text-default)"
+      }
+    },
+    {
+      "name": "Print Text Color",
+      "selectors": [".sky-theme-rainbow"],
+      "media": "print",
+      "excludeFromDocs": true,
+      "properties": {
+        "--sky-theme-color-text-default": "black"
+      }
+    }
+  ]
+}
